@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #f7f3ea;
+  color: #24231f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(216, 238, 230, 0.65), rgba(247, 243, 234, 0) 360px),
+    #f7f3ea;
+  color: #24231f;
+  font-family:
+    Arial,
+    "Noto Sans KR",
+    "Apple SD Gothic Neo",
+    sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(31, 111, 91, 0.28);
+  outline-offset: 2px;
+}
