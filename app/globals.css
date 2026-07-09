@@ -4,8 +4,8 @@
 
 :root {
   color-scheme: light;
-  background: #f7f3ea;
-  color: #24231f;
+  background: #f4f6f2;
+  color: #171a1f;
 }
 
 * {
@@ -20,9 +20,11 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(180deg, rgba(216, 238, 230, 0.65), rgba(247, 243, 234, 0) 360px),
-    #f7f3ea;
-  color: #24231f;
+    linear-gradient(rgba(23, 26, 31, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 26, 31, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #eef5f1 0, #f4f6f2 320px);
+  background-size: 28px 28px, 28px 28px, 100% 100%;
+  color: #171a1f;
   font-family:
     Arial,
     "Noto Sans KR",
@@ -41,6 +43,103 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 3px solid rgba(31, 111, 91, 0.28);
+  outline: 3px solid rgba(15, 139, 141, 0.28);
   outline-offset: 2px;
+}
+
+@layer components {
+  .field {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #d9ded6;
+    background: #ffffff;
+    padding: 0.75rem 0.875rem;
+    color: #171a1f;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .field::placeholder {
+    color: #98a2b3;
+  }
+
+  .field:hover {
+    border-color: rgba(15, 139, 141, 0.5);
+  }
+
+  .field:focus {
+    border-color: #0f8b8d;
+    box-shadow: 0 0 0 4px rgba(15, 139, 141, 0.12);
+    outline: none;
+  }
+
+  .action-button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 34px rgba(23, 26, 31, 0.1);
+  }
+
+  .action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .icon-button {
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid #d9ded6;
+    background: #ffffff;
+    color: #171a1f;
+    padding: 0.625rem;
+    transition:
+      border-color 160ms ease,
+      background-color 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .icon-button:hover {
+    border-color: #0f8b8d;
+    color: #0f8b8d;
+    transform: translateY(-1px);
+  }
+
+  .nav-button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #d9ded6;
+    background: #ffffff;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .nav-button:disabled {
+    opacity: 0.4;
+  }
 }

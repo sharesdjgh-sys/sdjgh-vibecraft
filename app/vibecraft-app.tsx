@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
   Bot,
+  Check,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Circle,
   CircleDashed,
@@ -32,6 +34,7 @@ import {
   Upload,
   UserRound,
   Wrench,
+  X,
   XCircle,
 } from "lucide-react";
 import {
@@ -73,24 +76,77 @@ type ChatMessage = {
   links?: string[];
 };
 
-const stepMeta: Array<{
-  id: StepId;
-  label: string;
-  description: string;
-  icon: typeof GraduationCap;
-}> = [
-  { id: "role", label: "역할", description: "설명 톤 선택", icon: GraduationCap },
-  { id: "start", label: "시작", description: "기획서 또는 아이디어", icon: Upload },
-  { id: "recommendation", label: "추천", description: "맞춤 로드맵", icon: LayoutDashboard },
-  { id: "concept", label: "개념", description: "바이브코딩 이해", icon: BookOpen },
-  { id: "tools", label: "도구", description: "Codex, Claude, Antigravity", icon: Code2 },
-  { id: "service", label: "유형", description: "웹, 모바일, SW", icon: Smartphone },
-  { id: "checklist", label: "실습", description: "완료 상태 추적", icon: ListChecks },
-  { id: "terms", label: "용어", description: "초보자 사전", icon: Search },
-  { id: "prompts", label: "프롬프트", description: "복사해서 사용", icon: ClipboardList },
-  { id: "error", label: "에러", description: "해결 순서", icon: Wrench },
-  { id: "deploy", label: "점검", description: "배포 전 확인", icon: Rocket },
+const steps: Array<{ id: StepId; label: string; short: string; icon: typeof GraduationCap }> = [
+  { id: "role", label: "역할 선택", short: "역할", icon: GraduationCap },
+  { id: "start", label: "입력", short: "입력", icon: Upload },
+  { id: "recommendation", label: "추천", short: "추천", icon: LayoutDashboard },
+  { id: "concept", label: "개념", short: "개념", icon: BookOpen },
+  { id: "tools", label: "도구", short: "도구", icon: Code2 },
+  { id: "service", label: "유형", short: "유형", icon: Smartphone },
+  { id: "checklist", label: "실습", short: "실습", icon: ListChecks },
+  { id: "terms", label: "용어", short: "용어", icon: Search },
+  { id: "prompts", label: "프롬프트", short: "프롬프트", icon: ClipboardList },
+  { id: "error", label: "에러 해결", short: "에러", icon: Wrench },
+  { id: "deploy", label: "배포 점검", short: "점검", icon: Rocket },
 ];
+
+const stepIntro: Record<StepId, { title: string; description: string; action: string }> = {
+  role: {
+    title: "누구의 눈높이로 코칭할까요?",
+    description: "역할에 따라 예시, 안내 문장, 추천 이유가 달라집니다.",
+    action: "역할을 선택하면 바로 다음 단계로 이동합니다.",
+  },
+  start: {
+    title: "기획서가 있으면 업로드하고, 없으면 아이디어만 적으세요.",
+    description: "PlanCraft 문서를 분석하거나 짧은 아이디어를 질문형 브리프로 바꿉니다.",
+    action: "txt, md는 즉시 분석하고 PDF는 핵심 내용을 함께 붙여넣는 방식으로 시작합니다.",
+  },
+  recommendation: {
+    title: "추천 결과를 작업 계획으로 바꿉니다.",
+    description: "도구, 서비스 유형, 기술 스택, 난이도, 구현 순서를 한 화면에서 조정합니다.",
+    action: "마음에 들지 않으면 도구와 유형 단계에서 직접 바꾸면 됩니다.",
+  },
+  concept: {
+    title: "바이브코딩에서 사람이 해야 할 일을 분리합니다.",
+    description: "AI에게 맡길 일과 사용자가 직접 확인해야 할 일을 짧게 정리합니다.",
+    action: "개념을 확인한 뒤 도구 선택으로 넘어가세요.",
+  },
+  tools: {
+    title: "Codex, Claude, Antigravity 중 현재 프로젝트에 맞는 도구를 고릅니다.",
+    description: "게임형 선택 감각은 살리되, 실제 구현 기준으로 비교합니다.",
+    action: "도구 카드를 선택하면 아래 가이드가 즉시 바뀝니다.",
+  },
+  service: {
+    title: "결과물이 쓰일 화면에 맞춰 기술 조합을 고릅니다.",
+    description: "웹, 모바일 최적화 웹앱, 자동화 도구 중 가장 맞는 형태를 선택합니다.",
+    action: "선택한 유형에 따라 화면 목록과 기술 스택이 바뀝니다.",
+  },
+  checklist: {
+    title: "완성까지 필요한 일을 상태로 관리합니다.",
+    description: "대기, 진행, 완료, 막힘을 표시하고 막힌 항목은 에러 해결로 넘깁니다.",
+    action: "실제로 끝낸 항목부터 완료로 바꿔보세요.",
+  },
+  terms: {
+    title: "막히는 용어를 바로 찾아봅니다.",
+    description: "터미널, GitHub, Vercel, Neon DB 같은 개념을 역할별 예시로 설명합니다.",
+    action: "검색창에 모르는 단어를 입력하세요.",
+  },
+  prompts: {
+    title: "AI에게 바로 붙여넣을 요청문을 준비합니다.",
+    description: "기획서 구현, 모바일 UI, 에러 해결, 배포 점검 템플릿을 제공합니다.",
+    action: "복사 버튼을 누르면 현재 프로젝트 요약이 자동으로 들어갑니다.",
+  },
+  error: {
+    title: "에러 메시지를 다음 행동으로 바꿉니다.",
+    description: "원인 후보와 확인 순서를 초보자 기준으로 정리합니다.",
+    action: "비밀키와 DB 주소는 제거하고 에러 로그만 붙여넣으세요.",
+  },
+  deploy: {
+    title: "공개 전 마지막 점검을 끝냅니다.",
+    description: "모바일 화면, 버튼 동작, 환경변수, DB 연결, 첫 사용자 흐름을 확인합니다.",
+    action: "모든 항목이 완료되면 실제 배포 링크를 공유할 준비가 된 상태입니다.",
+  },
+};
 
 const roleIcons: Record<Role, typeof GraduationCap> = {
   student: GraduationCap,
@@ -110,34 +166,11 @@ const serviceIcons: Record<ServiceType, typeof Code2> = {
   software: Terminal,
 };
 
-const statusMeta: Record<
-  ChecklistStatus,
-  {
-    label: string;
-    icon: typeof Circle;
-    className: string;
-  }
-> = {
-  pending: {
-    label: "대기",
-    icon: Circle,
-    className: "border-line bg-white text-ink",
-  },
-  active: {
-    label: "진행",
-    icon: CircleDashed,
-    className: "border-amber/30 bg-amber/10 text-amber",
-  },
-  done: {
-    label: "완료",
-    icon: CheckCircle2,
-    className: "border-pine/30 bg-mint text-pine",
-  },
-  blocked: {
-    label: "막힘",
-    icon: XCircle,
-    className: "border-blush/30 bg-blush/10 text-blush",
-  },
+const statusMeta: Record<ChecklistStatus, { label: string; icon: typeof Circle; className: string }> = {
+  pending: { label: "대기", icon: Circle, className: "border-line bg-surface text-muted" },
+  active: { label: "진행", icon: CircleDashed, className: "border-blue/40 bg-blue/10 text-blue" },
+  done: { label: "완료", icon: CheckCircle2, className: "border-leaf/40 bg-leaf/10 text-leaf" },
+  blocked: { label: "막힘", icon: XCircle, className: "border-coral/40 bg-coral/10 text-coral" },
 };
 
 function usePersistentState<T>(key: string, initialValue: T) {
@@ -147,9 +180,7 @@ function usePersistentState<T>(key: string, initialValue: T) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(key);
-      if (stored) {
-        setValue(JSON.parse(stored) as T);
-      }
+      if (stored) setValue(JSON.parse(stored) as T);
     } catch {
       setValue(initialValue);
     } finally {
@@ -158,11 +189,7 @@ function usePersistentState<T>(key: string, initialValue: T) {
   }, [key]);
 
   useEffect(() => {
-    if (!ready) {
-      return;
-    }
-
-    window.localStorage.setItem(key, JSON.stringify(value));
+    if (ready) window.localStorage.setItem(key, JSON.stringify(value));
   }, [key, ready, value]);
 
   return [value, setValue] as const;
@@ -171,25 +198,18 @@ function usePersistentState<T>(key: string, initialValue: T) {
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-
   const data = (await response.json()) as T & { error?: string };
-
-  if (!response.ok) {
-    throw new Error(data.error ?? "요청을 처리하지 못했습니다.");
-  }
-
+  if (!response.ok) throw new Error(data.error ?? "요청을 처리하지 못했습니다.");
   return data;
 }
 
-function getStepIndex(step: StepId) {
+function stepIndex(step: StepId) {
   return Math.max(
     0,
-    stepMeta.findIndex((item) => item.id === step),
+    steps.findIndex((item) => item.id === step),
   );
 }
 
@@ -216,7 +236,7 @@ export function VibeCraftApp() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "현재 단계에서 막힌 내용을 적어주세요. 선택한 역할과 도구 흐름에 맞춰 다음 행동을 제안합니다.",
+      content: "막힌 내용을 적어주세요. 현재 단계와 선택한 도구 기준으로 다음 행동을 짧게 정리해드릴게요.",
       links: ["실습", "용어", "에러"],
     },
   ]);
@@ -226,71 +246,48 @@ export function VibeCraftApp() {
   const activeRole = role ?? "student";
   const activeTool = selectedTool ?? recommendation?.recommendedTool ?? "codex";
   const activeServiceType = selectedServiceType ?? recommendation?.recommendedServiceType ?? "web";
+  const currentIndex = stepIndex(step);
+  const currentStep = steps[currentIndex];
+  const currentIntro = stepIntro[step];
+  const progress = Math.round(((currentIndex + 1) / steps.length) * 100);
   const selectedToolInfo = tools.find((tool) => tool.slug === activeTool) ?? tools[0];
   const selectedServiceInfo = serviceTypes.find((item) => item.id === activeServiceType) ?? serviceTypes[0];
-  const currentStep = stepMeta[getStepIndex(step)];
+  const checklistItems = recommendation?.checklist ?? baseChecklist;
 
   const filteredTerms = useMemo(() => {
     const query = termSearch.trim().toLowerCase();
-    if (!query) {
-      return terms;
-    }
-
-    return terms.filter((item) => {
-      return (
-        item.term.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        item.plainDescription.toLowerCase().includes(query)
-      );
-    });
+    if (!query) return terms;
+    return terms.filter((item) =>
+      [item.term, item.category, item.plainDescription, ...item.related].some((value) => value.toLowerCase().includes(query)),
+    );
   }, [termSearch]);
 
   const filteredPrompts = useMemo(() => {
     const query = promptSearch.trim().toLowerCase();
-
     return promptTemplates.filter((item) => {
       const matchesTool = item.tool === "all" || item.tool === activeTool;
       const matchesQuery =
         !query ||
-        item.title.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query);
-
+        [item.title, item.category, item.description].some((value) => value.toLowerCase().includes(query));
       return matchesTool && matchesQuery;
     });
   }, [activeTool, promptSearch]);
 
-  const checklistItems = recommendation?.checklist ?? baseChecklist;
-
-  function moveStep(delta: number) {
-    const nextIndex = Math.min(stepMeta.length - 1, Math.max(0, getStepIndex(step) + delta));
-    setStep(stepMeta[nextIndex].id);
+  function go(delta: number) {
+    setStep(steps[Math.min(steps.length - 1, Math.max(0, currentIndex + delta))].id);
   }
 
-  function updateChecklistStatus(item: ChecklistItem, status: ChecklistStatus) {
-    setChecklistStatuses((current) => ({
-      ...current,
-      [item.id]: status,
-    }));
-
+  function setChecklist(item: ChecklistItem, status: ChecklistStatus) {
+    setChecklistStatuses((current) => ({ ...current, [item.id]: status }));
     void fetch("/api/checklist-progress", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sessionId,
-        checklistId: item.id,
-        status,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, checklistId: item.id, status }),
     });
   }
 
-  function updateDeploymentStatus(item: ChecklistItem, status: ChecklistStatus) {
-    setDeploymentStatuses((current) => ({
-      ...current,
-      [item.id]: status,
-    }));
+  function setDeployCheck(item: ChecklistItem, status: ChecklistStatus) {
+    setDeploymentStatuses((current) => ({ ...current, [item.id]: status }));
   }
 
   async function handleFileUpload(file: File) {
@@ -304,14 +301,13 @@ export function VibeCraftApp() {
 
     if (file.name.toLowerCase().endsWith(".pdf")) {
       setPlanText(
-        `[PDF 파일명: ${file.name}]\n현재 MVP는 txt, md 텍스트 추출을 우선 지원합니다. PDF는 핵심 내용을 아래 입력창에 붙여넣으면 같은 방식으로 분석할 수 있습니다.`,
+        `[PDF 파일명: ${file.name}]\n현재 MVP는 txt, md 텍스트 추출을 우선 지원합니다. PDF는 PlanCraft 요약문을 아래 입력창에 붙여넣으면 같은 방식으로 분석할 수 있습니다.`,
       );
-      setNotice("PDF 파일은 선택됐습니다. 정확한 분석을 위해 PlanCraft 요약문을 입력창에 함께 붙여넣어주세요.");
+      setNotice("PDF는 선택됐습니다. 정확한 추천을 위해 핵심 내용을 입력창에 함께 붙여넣어주세요.");
       return;
     }
 
-    const text = await file.text();
-    setPlanText(text);
+    setPlanText(await file.text());
   }
 
   async function analyzePlan() {
@@ -320,20 +316,15 @@ export function VibeCraftApp() {
       setStep("role");
       return;
     }
-
     if (planText.trim().length < 10) {
-      setNotice("기획서 내용이 너무 짧습니다. 핵심 기능과 사용자를 포함해 입력해주세요.");
+      setNotice("기획서 내용이 너무 짧습니다. 사용자와 핵심 기능을 포함해 입력해주세요.");
       return;
     }
 
     setBusy("analyze");
     setNotice(null);
-
     try {
-      const result = await postJson<Recommendation>("/api/analyze-plan", {
-        role,
-        extractedText: planText,
-      });
+      const result = await postJson<Recommendation>("/api/analyze-plan", { role, extractedText: planText });
       setRecommendation(result);
       setSelectedTool(result.recommendedTool);
       setSelectedServiceType(result.recommendedServiceType);
@@ -351,7 +342,6 @@ export function VibeCraftApp() {
       setStep("role");
       return;
     }
-
     if (idea.trim().length < 4) {
       setNotice("만들고 싶은 서비스를 한 문장 이상으로 입력해주세요.");
       return;
@@ -359,16 +349,8 @@ export function VibeCraftApp() {
 
     setBusy("idea-questions");
     setNotice(null);
-
     try {
-      const result = await postJson<{
-        nextQuestions: string[];
-        projectBrief: null;
-        recommendation: null;
-      }>("/api/idea-interview", {
-        role,
-        idea,
-      });
+      const result = await postJson<{ nextQuestions: string[] }>("/api/idea-interview", { role, idea });
       setInterviewQuestions(result.nextQuestions);
       setInterviewAnswers({});
     } catch (error) {
@@ -387,18 +369,12 @@ export function VibeCraftApp() {
 
     setBusy("idea-result");
     setNotice(null);
-
     try {
-      const result = await postJson<{
-        nextQuestions: string[];
-        projectBrief: unknown;
-        recommendation: Recommendation;
-      }>("/api/idea-interview", {
+      const result = await postJson<{ recommendation: Recommendation }>("/api/idea-interview", {
         role,
         idea,
         answers: interviewAnswers,
       });
-
       setRecommendation(result.recommendation);
       setSelectedTool(result.recommendation.recommendedTool);
       setSelectedServiceType(result.recommendation.recommendedServiceType);
@@ -418,7 +394,6 @@ export function VibeCraftApp() {
 
     setBusy("error");
     setNotice(null);
-
     try {
       const result = await postJson<ErrorSolution>("/api/solve-error", {
         role: activeRole,
@@ -436,13 +411,10 @@ export function VibeCraftApp() {
 
   async function sendChatMessage() {
     const message = chatInput.trim();
-    if (!message) {
-      return;
-    }
+    if (!message) return;
 
     setChatInput("");
     setChatMessages((current) => [...current, { role: "user", content: message }]);
-
     try {
       const result = await postJson<{ answer: string; relatedLinks: string[] }>("/api/chat", {
         role: activeRole,
@@ -452,22 +424,14 @@ export function VibeCraftApp() {
         selectedServiceType: activeServiceType,
         projectSummary: recommendation?.summary,
       });
-
       setChatMessages((current) => [
         ...current,
-        {
-          role: "assistant",
-          content: result.answer,
-          links: result.relatedLinks,
-        },
+        { role: "assistant", content: result.answer, links: result.relatedLinks },
       ]);
     } catch {
       setChatMessages((current) => [
         ...current,
-        {
-          role: "assistant",
-          content: "답변을 만들지 못했습니다. 질문을 조금 더 짧게 나눠서 다시 보내주세요.",
-        },
+        { role: "assistant", content: "답변을 만들지 못했습니다. 질문을 조금 더 짧게 나눠 다시 보내주세요." },
       ]);
     }
   }
@@ -481,520 +445,369 @@ export function VibeCraftApp() {
   }
 
   function renderStep() {
-    if (step === "role") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="1단계"
-            title="역할을 선택하세요"
-            description="선택한 역할에 따라 예시와 설명 방식이 달라집니다."
-          />
-          <div className="grid gap-4 md:grid-cols-3">
+    switch (step) {
+      case "role":
+        return (
+          <div className="grid gap-3 md:grid-cols-3">
             {roleOptions.map((option) => {
               const Icon = roleIcons[option.id];
               const selected = role === option.id;
-
               return (
-                <button
+                <ChoiceCard
+                  description={option.description}
+                  icon={Icon}
                   key={option.id}
-                  className={`rounded-lg border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-panel ${
-                    selected ? "border-pine ring-2 ring-pine/20" : "border-line"
-                  }`}
+                  meta={option.example}
                   onClick={() => {
                     setRole(option.id);
                     setStep("start");
                   }}
-                  type="button"
-                >
-                  <Icon className="mb-4 h-7 w-7 text-pine" />
-                  <h3 className="text-lg font-semibold">{option.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-ink/70">{option.description}</p>
-                  <p className="mt-4 rounded-md bg-paper p-3 text-sm leading-6 text-ink/75">{option.example}</p>
-                </button>
+                  selected={selected}
+                  title={option.title}
+                />
               );
             })}
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "start") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="2단계"
-            title="기획서 또는 아이디어로 시작하세요"
-            description="PlanCraft 기획서가 있으면 업로드하고, 없다면 만들고 싶은 서비스를 입력하세요."
-          />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Panel title="PlanCraft 기획서 업로드" icon={Upload}>
-              <div className="space-y-4">
-                <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-paper p-5 text-center transition hover:border-pine">
-                  <FileText className="mb-3 h-8 w-8 text-pine" />
-                  <span className="text-sm font-semibold">txt, md, pdf 파일 선택</span>
-                  <span className="mt-1 text-xs text-ink/60">PDF는 핵심 내용을 입력창에 함께 붙여넣으면 더 정확합니다.</span>
-                  <input
-                    accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        void handleFileUpload(file);
-                      }
-                    }}
-                    type="file"
-                  />
-                </label>
-                {uploadedFileName ? <p className="text-sm text-ink/65">선택한 파일: {uploadedFileName}</p> : null}
-                <textarea
-                  className="min-h-44 w-full rounded-lg border border-line bg-white p-4 text-sm leading-6"
-                  onChange={(event) => setPlanText(event.target.value)}
-                  placeholder="기획서 핵심 내용을 붙여넣거나 업로드한 txt, md 내용을 확인하세요."
-                  value={planText}
-                />
+      case "start":
+        return (
+          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+            <WorkSurface
+              action={
                 <PrimaryButton disabled={busy === "analyze"} icon={FileText} onClick={analyzePlan}>
-                  {busy === "analyze" ? "분석 중" : "기획서 분석하기"}
+                  {busy === "analyze" ? "분석 중" : "기획서 분석"}
                 </PrimaryButton>
-              </div>
-            </Panel>
-
-            <Panel title="기획서 없이 아이디어로 시작" icon={MessageSquare}>
-              <div className="space-y-4">
-                <textarea
-                  className="min-h-28 w-full rounded-lg border border-line bg-white p-4 text-sm leading-6"
-                  onChange={(event) => setIdea(event.target.value)}
-                  placeholder="예: 동아리 모집 신청을 받고 선생님이 확인할 수 있는 모바일 웹앱을 만들고 싶어요."
-                  value={idea}
+              }
+              icon={Upload}
+              title="PlanCraft 기획서"
+            >
+              <label className="group flex min-h-32 cursor-pointer flex-col justify-between rounded-lg border border-dashed border-line bg-canvas p-4 transition hover:border-teal hover:bg-teal/5">
+                <span className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-md bg-teal text-white">
+                    <Upload className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold">txt, md, pdf 선택</span>
+                    <span className="mt-1 block text-xs text-muted">PDF는 요약문을 함께 붙여넣으면 더 정확합니다.</span>
+                  </span>
+                </span>
+                <input
+                  accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void handleFileUpload(file);
+                  }}
+                  type="file"
                 />
-                <SecondaryButton disabled={busy === "idea-questions"} icon={MessageSquare} onClick={requestInterviewQuestions}>
-                  {busy === "idea-questions" ? "질문 생성 중" : "AI 질문 받기"}
-                </SecondaryButton>
-                {interviewQuestions.length > 0 ? (
-                  <div className="space-y-3">
-                    {interviewQuestions.map((question) => (
-                      <label className="block" key={question}>
-                        <span className="text-sm font-medium">{question}</span>
-                        <input
-                          className="mt-2 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"
-                          onChange={(event) =>
-                            setInterviewAnswers((current) => ({
-                              ...current,
-                              [question]: event.target.value,
-                            }))
-                          }
-                          value={interviewAnswers[question] ?? ""}
-                        />
-                      </label>
-                    ))}
-                    <PrimaryButton disabled={busy === "idea-result"} icon={LayoutDashboard} onClick={finishInterview}>
-                      {busy === "idea-result" ? "추천 생성 중" : "답변 기반 추천 만들기"}
-                    </PrimaryButton>
-                  </div>
-                ) : null}
-              </div>
-            </Panel>
-          </div>
-        </section>
-      );
-    }
+                {uploadedFileName ? <span className="mt-3 text-xs font-medium text-teal">{uploadedFileName}</span> : null}
+              </label>
+              <textarea
+                className="field min-h-56"
+                onChange={(event) => setPlanText(event.target.value)}
+                placeholder="기획서 핵심 내용을 붙여넣으세요. 사용자, 핵심 기능, 데이터 저장 여부가 들어가면 추천이 좋아집니다."
+                value={planText}
+              />
+            </WorkSurface>
 
-    if (step === "recommendation") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="3단계"
-            title="맞춤 구현 로드맵"
-            description="AI 추천은 시작점을 잡기 위한 제안입니다. 필요하면 도구와 서비스 유형을 직접 바꿀 수 있습니다."
-          />
-          {recommendation ? (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
-                <p className="text-sm font-semibold text-pine">서비스 요약</p>
-                <h3 className="mt-2 text-xl font-semibold leading-8">{recommendation.summary}</h3>
-              </div>
-              <div className="grid gap-4 lg:grid-cols-3">
-                <MetricCard label="추천 도구" value={selectedToolInfo.name} icon={toolIcons[activeTool]} />
-                <MetricCard label="추천 유형" value={selectedServiceInfo.title} icon={serviceIcons[activeServiceType]} />
-                <MetricCard label="예상 난이도" value={recommendation.difficulty} icon={ShieldCheck} />
-              </div>
-              <div className="grid gap-4 xl:grid-cols-2">
-                <Panel title="추천 이유" icon={CheckCircle2}>
-                  <List items={recommendation.reasons} />
-                </Panel>
-                <Panel title="구현 순서" icon={ListChecks}>
-                  <List items={recommendation.roadmap} ordered />
-                </Panel>
-              </div>
-              <Panel title="추천 기술 스택" icon={Database}>
-                <div className="flex flex-wrap gap-2">
-                  {recommendation.recommendedStack.map((stack) => (
-                    <span className="rounded-md border border-line bg-paper px-3 py-2 text-sm font-medium" key={stack}>
-                      {stack}
-                    </span>
-                  ))}
-                </div>
-              </Panel>
-              <div className="flex flex-wrap gap-2">
-                <PrimaryButton icon={BookOpen} onClick={() => setStep("concept")}>
-                  개념부터 학습하기
-                </PrimaryButton>
-                <SecondaryButton icon={Code2} onClick={() => setStep("tools")}>
-                  도구 바로 보기
+            <WorkSurface
+              action={
+                <SecondaryButton disabled={busy === "idea-questions"} icon={MessageSquare} onClick={requestInterviewQuestions}>
+                  {busy === "idea-questions" ? "질문 생성 중" : "질문 받기"}
                 </SecondaryButton>
+              }
+              icon={MessageSquare}
+              title="아이디어 인터뷰"
+            >
+              <textarea
+                className="field min-h-28"
+                onChange={(event) => setIdea(event.target.value)}
+                placeholder="예: 동아리 모집 신청을 받고 선생님이 확인하는 모바일 웹앱을 만들고 싶어요."
+                value={idea}
+              />
+              {interviewQuestions.length ? (
+                <div className="space-y-3">
+                  {interviewQuestions.map((question, index) => (
+                    <label className="block" key={question}>
+                      <span className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <span className="grid h-6 w-6 place-items-center rounded-md bg-blue/10 text-xs text-blue">{index + 1}</span>
+                        {question}
+                      </span>
+                      <input
+                        className="field h-11"
+                        onChange={(event) =>
+                          setInterviewAnswers((current) => ({ ...current, [question]: event.target.value }))
+                        }
+                        value={interviewAnswers[question] ?? ""}
+                      />
+                    </label>
+                  ))}
+                  <PrimaryButton disabled={busy === "idea-result"} icon={LayoutDashboard} onClick={finishInterview}>
+                    {busy === "idea-result" ? "추천 생성 중" : "답변으로 로드맵 생성"}
+                  </PrimaryButton>
+                </div>
+              ) : (
+                <InsightStrip
+                  icon={Sparkles}
+                  text="질문을 받으면 서비스 목적, 사용자, 저장 기능, 모바일 중요도를 짧게 확인합니다."
+                />
+              )}
+            </WorkSurface>
+          </div>
+        );
+
+      case "recommendation":
+        if (!recommendation) {
+          return (
+            <EmptyState
+              actionLabel="입력 단계로 이동"
+              description="기획서나 아이디어를 입력하면 추천 도구, 서비스 유형, 구현 순서가 생성됩니다."
+              icon={FileText}
+              onAction={() => setStep("start")}
+              title="아직 로드맵이 없습니다"
+            />
+          );
+        }
+        return (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-line bg-ink p-5 text-white">
+              <p className="text-xs font-semibold uppercase text-lemon">Project Brief</p>
+              <h3 className="mt-3 text-2xl font-bold leading-9">{recommendation.summary}</h3>
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <StatusTile icon={toolIcons[activeTool]} label="추천 도구" value={selectedToolInfo.name} />
+                <StatusTile icon={serviceIcons[activeServiceType]} label="추천 유형" value={selectedServiceInfo.title} />
+                <StatusTile icon={ShieldCheck} label="예상 난이도" value={recommendation.difficulty} />
               </div>
             </div>
-          ) : (
-            <EmptyState
-              icon={FileText}
-              title="아직 추천 결과가 없습니다"
-              description="기획서를 업로드하거나 아이디어 질문에 답하면 로드맵을 생성합니다."
-              actionLabel="시작 화면으로 이동"
-              onAction={() => setStep("start")}
-            />
-          )}
-        </section>
-      );
-    }
+            <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+              <WorkSurface icon={CheckCircle2} title="추천 이유">
+                <BulletList items={recommendation.reasons} />
+              </WorkSurface>
+              <WorkSurface icon={ListChecks} title="구현 순서">
+                <NumberList items={recommendation.roadmap} />
+              </WorkSurface>
+            </div>
+            <WorkSurface icon={Database} title="기술 조합">
+              <TokenGrid items={recommendation.recommendedStack} />
+            </WorkSurface>
+          </div>
+        );
 
-    if (step === "concept") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="4단계"
-            title="바이브코딩 핵심 개념"
-            description="AI에게 맡길 일과 사람이 결정해야 할 일을 분리해서 이해합니다."
-          />
-          <div className="grid gap-4 md:grid-cols-2">
-            {conceptCards.map((card) => (
-              <div className="rounded-lg border border-line bg-white p-5 shadow-sm" key={card.title}>
-                <BookOpen className="mb-4 h-6 w-6 text-pine" />
-                <h3 className="text-lg font-semibold">{card.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-ink/70">{card.body}</p>
-              </div>
+      case "concept":
+        return (
+          <div className="grid gap-3 md:grid-cols-2">
+            {conceptCards.map((card, index) => (
+              <FeatureTile
+                accent={index % 2 === 0 ? "teal" : "blue"}
+                description={card.body}
+                icon={index % 2 === 0 ? BookOpen : Sparkles}
+                key={card.title}
+                title={card.title}
+              />
             ))}
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "tools") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="5단계"
-            title="바이브코딩 도구 선택"
-            description="세 도구의 성격을 비교하고 현재 프로젝트에 맞는 도구를 선택하세요."
-          />
-          <div className="grid gap-4 xl:grid-cols-3">
-            {tools.map((tool) => {
-              const Icon = toolIcons[tool.slug];
-              const selected = activeTool === tool.slug;
-
-              return (
-                <button
-                  className={`rounded-lg border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-panel ${
-                    selected ? "border-pine ring-2 ring-pine/20" : "border-line"
-                  }`}
+      case "tools":
+        return (
+          <div className="space-y-4">
+            <div className="grid gap-3 xl:grid-cols-3">
+              {tools.map((tool) => (
+                <ChoiceCard
+                  description={tool.tagline}
+                  icon={toolIcons[tool.slug]}
                   key={tool.slug}
+                  meta={tool.bestFor}
                   onClick={() => setSelectedTool(tool.slug)}
-                  type="button"
-                >
-                  <Icon className="mb-4 h-7 w-7 text-pine" />
-                  <h3 className="text-xl font-semibold">{tool.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-ink/70">{tool.tagline}</p>
-                  <p className="mt-4 rounded-md bg-paper p-3 text-sm leading-6 text-ink/75">{tool.bestFor}</p>
-                </button>
-              );
-            })}
-          </div>
-          <Panel title={`${selectedToolInfo.name} 단계별 가이드`} icon={toolIcons[activeTool]}>
-            <div className="grid gap-3 md:grid-cols-2">
-              {selectedToolInfo.guide.map((section) => (
-                <div className="rounded-lg border border-line bg-paper p-4" key={section.title}>
-                  <h4 className="font-semibold">{section.title}</h4>
-                  <List items={section.items} />
-                </div>
+                  selected={activeTool === tool.slug}
+                  title={tool.name}
+                />
               ))}
             </div>
-          </Panel>
-        </section>
-      );
-    }
-
-    if (step === "service") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="6단계"
-            title="개발 서비스 유형 선택"
-            description="결과물의 사용 환경에 맞춰 화면 구성과 기술 조합을 정합니다."
-          />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {serviceTypes.map((service) => {
-              const Icon = serviceIcons[service.id];
-              const selected = activeServiceType === service.id;
-
-              return (
-                <button
-                  className={`rounded-lg border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-panel ${
-                    selected ? "border-pine ring-2 ring-pine/20" : "border-line"
-                  }`}
-                  key={service.id}
-                  onClick={() => setSelectedServiceType(service.id)}
-                  type="button"
-                >
-                  <Icon className="mb-4 h-7 w-7 text-pine" />
-                  <h3 className="text-lg font-semibold">{service.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-ink/70">{service.description}</p>
-                </button>
-              );
-            })}
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Panel title="추천 기술 조합" icon={Database}>
-              <div className="flex flex-wrap gap-2">
-                {selectedServiceInfo.stack.map((stack) => (
-                  <span className="rounded-md border border-line bg-white px-3 py-2 text-sm font-medium" key={stack}>
-                    {stack}
-                  </span>
+            <WorkSurface icon={toolIcons[activeTool]} title={`${selectedToolInfo.name} 실행 가이드`}>
+              <div className="grid gap-3 md:grid-cols-2">
+                {selectedToolInfo.guide.map((section) => (
+                  <StepNote items={section.items} key={section.title} title={section.title} />
                 ))}
               </div>
-            </Panel>
-            <Panel title="필요한 화면" icon={LayoutDashboard}>
-              <List items={selectedServiceInfo.screens} />
-            </Panel>
+            </WorkSurface>
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "checklist") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="7단계"
-            title="체크리스트 기반 실습 모드"
-            description="실제 작업 상태를 표시하고 막힌 항목은 에러 해결 도우미로 넘기세요."
-          />
+      case "service":
+        return (
+          <div className="space-y-4">
+            <div className="grid gap-3 lg:grid-cols-3">
+              {serviceTypes.map((service) => (
+                <ChoiceCard
+                  description={service.description}
+                  icon={serviceIcons[service.id]}
+                  key={service.id}
+                  meta={service.stack.join(" · ")}
+                  onClick={() => setSelectedServiceType(service.id)}
+                  selected={activeServiceType === service.id}
+                  title={service.title}
+                />
+              ))}
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <WorkSurface icon={Database} title="추천 기술 조합">
+                <TokenGrid items={selectedServiceInfo.stack} />
+              </WorkSurface>
+              <WorkSurface icon={LayoutDashboard} title="필요한 화면">
+                <BulletList items={selectedServiceInfo.screens} />
+              </WorkSurface>
+            </div>
+          </div>
+        );
+
+      case "checklist":
+        return (
           <div className="space-y-3">
             {checklistItems.map((item) => (
               <ChecklistRow
                 item={item}
                 key={item.id}
-                onChange={(status) => updateChecklistStatus(item, status)}
+                onChange={(status) => setChecklist(item, status)}
                 status={checklistStatuses[item.id] ?? "pending"}
               />
             ))}
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "terms") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="8단계"
-            title="용어 사전"
-            description="초보자가 자주 막히는 개발 용어를 역할별 예시와 함께 확인합니다."
-          />
-          <SearchBox onChange={setTermSearch} placeholder="터미널, Vercel, 환경변수 검색" value={termSearch} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            {filteredTerms.map((term) => (
-              <div className="rounded-lg border border-line bg-white p-5 shadow-sm" key={term.term}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-pine">{term.category}</p>
-                    <h3 className="mt-1 text-lg font-semibold">{term.term}</h3>
-                  </div>
-                  <BookOpen className="h-5 w-5 shrink-0 text-pine" />
-                </div>
-                <p className="mt-3 text-sm leading-6 text-ink/70">{term.plainDescription}</p>
-                <p className="mt-3 rounded-md bg-paper p-3 text-sm leading-6 text-ink/75">{term.examples[activeRole]}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {term.related.map((related) => (
-                    <span className="rounded-md bg-mint px-2 py-1 text-xs font-medium text-pine" key={related}>
-                      {related}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+      case "terms":
+        return (
+          <div className="space-y-4">
+            <SearchBox onChange={setTermSearch} placeholder="터미널, Vercel, 환경변수 검색" value={termSearch} />
+            <div className="grid gap-3 lg:grid-cols-2">
+              {filteredTerms.map((term) => (
+                <TermTile key={term.term} role={activeRole} term={term} />
+              ))}
+            </div>
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "prompts") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="9단계"
-            title="프롬프트 템플릿"
-            description="현재 프로젝트 정보를 넣어 바로 복사할 수 있는 요청문을 제공합니다."
-          />
-          <SearchBox onChange={setPromptSearch} placeholder="배포, 에러, 모바일 검색" value={promptSearch} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            {filteredPrompts.map((prompt) => (
-              <div className="rounded-lg border border-line bg-white p-5 shadow-sm" key={prompt.id}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-pine">{prompt.category}</p>
-                <h3 className="mt-2 text-lg font-semibold">{prompt.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-ink/70">{prompt.description}</p>
-                <pre className="mt-4 max-h-40 overflow-auto rounded-lg border border-line bg-paper p-3 text-xs leading-5 text-ink/75">
-                  {prompt.template}
-                </pre>
-                <button
-                  className="mt-4 inline-flex items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold transition hover:border-pine hover:text-pine"
-                  onClick={() => copyPrompt(prompt.template)}
-                  type="button"
-                >
-                  <Copy className="h-4 w-4" />
-                  복사
-                </button>
-              </div>
-            ))}
+      case "prompts":
+        return (
+          <div className="space-y-4">
+            <SearchBox onChange={setPromptSearch} placeholder="배포, 에러, 모바일 검색" value={promptSearch} />
+            <div className="grid gap-3 lg:grid-cols-2">
+              {filteredPrompts.map((prompt) => (
+                <PromptTile key={prompt.id} onCopy={() => copyPrompt(prompt.template)} prompt={prompt} />
+              ))}
+            </div>
           </div>
-        </section>
-      );
-    }
+        );
 
-    if (step === "error") {
-      return (
-        <section className="space-y-6">
-          <SectionHeader
-            eyebrow="10단계"
-            title="에러 해결 도우미"
-            description="에러 메시지를 붙여넣으면 가능한 원인과 다음 확인 순서를 정리합니다."
-          />
-          <Panel title="에러 메시지 입력" icon={AlertTriangle}>
-            <div className="space-y-4">
+      case "error":
+        return (
+          <div className="space-y-4">
+            <WorkSurface
+              action={
+                <PrimaryButton disabled={busy === "error"} icon={Wrench} onClick={solveCurrentError}>
+                  {busy === "error" ? "분석 중" : "해결 순서 보기"}
+                </PrimaryButton>
+              }
+              icon={AlertTriangle}
+              title="에러 메시지"
+            >
               <textarea
-                className="min-h-44 w-full rounded-lg border border-line bg-white p-4 text-sm leading-6"
+                className="field min-h-48"
                 onChange={(event) => setErrorMessage(event.target.value)}
                 placeholder="터미널, Vercel, 브라우저 콘솔의 에러 메시지를 붙여넣으세요. 비밀키와 DB 주소는 제거하세요."
                 value={errorMessage}
               />
-              <PrimaryButton disabled={busy === "error"} icon={Wrench} onClick={solveCurrentError}>
-                {busy === "error" ? "분석 중" : "해결 순서 보기"}
-              </PrimaryButton>
-            </div>
-          </Panel>
-          {errorSolution ? (
-            <div className="grid gap-4 xl:grid-cols-2">
-              <Panel title={errorSolution.summary} icon={AlertTriangle}>
-                <h4 className="font-semibold">가능한 원인</h4>
-                <List items={errorSolution.possibleCauses} />
-                <h4 className="mt-4 font-semibold">해결 순서</h4>
-                <List items={errorSolution.solutionSteps} ordered />
-              </Panel>
-              <Panel title="복사용 프롬프트" icon={ClipboardList}>
-                <pre className="rounded-lg border border-line bg-paper p-3 text-xs leading-5 text-ink/75">
-                  {errorSolution.suggestedPrompt.replaceAll("{{errorMessage}}", errorMessage)}
-                </pre>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {errorSolution.relatedTerms.map((term) => (
-                    <span className="rounded-md bg-mint px-2 py-1 text-xs font-medium text-pine" key={term}>
-                      {term}
-                    </span>
-                  ))}
-                </div>
-              </Panel>
-            </div>
-          ) : null}
-        </section>
-      );
-    }
+            </WorkSurface>
+            {errorSolution ? (
+              <div className="grid gap-4 xl:grid-cols-2">
+                <WorkSurface icon={AlertTriangle} title={errorSolution.summary}>
+                  <h4 className="text-sm font-semibold">가능한 원인</h4>
+                  <BulletList items={errorSolution.possibleCauses} />
+                  <h4 className="mt-5 text-sm font-semibold">해결 순서</h4>
+                  <NumberList items={errorSolution.solutionSteps} />
+                </WorkSurface>
+                <WorkSurface icon={ClipboardList} title="AI에게 다시 물어볼 프롬프트">
+                  <CodeBlock text={errorSolution.suggestedPrompt.replaceAll("{{errorMessage}}", errorMessage)} />
+                  <TokenGrid items={errorSolution.relatedTerms} />
+                </WorkSurface>
+              </div>
+            ) : null}
+          </div>
+        );
 
-    return (
-      <section className="space-y-6">
-        <SectionHeader
-          eyebrow="11단계"
-          title="배포 전 최종 점검"
-          description="서비스 공개 전에 모바일, 보안, 환경변수, 버튼 동작을 마지막으로 확인합니다."
-        />
-        <div className="space-y-3">
-          {deploymentChecks.map((item) => (
-            <ChecklistRow
-              item={item}
-              key={item.id}
-              onChange={(status) => updateDeploymentStatus(item, status)}
-              status={deploymentStatuses[item.id] ?? "pending"}
-            />
-          ))}
-        </div>
-      </section>
-    );
+      case "deploy":
+        return (
+          <div className="space-y-3">
+            {deploymentChecks.map((item) => (
+              <ChecklistRow
+                item={item}
+                key={item.id}
+                onChange={(status) => setDeployCheck(item, status)}
+                status={deploymentStatuses[item.id] ?? "pending"}
+              />
+            ))}
+          </div>
+        );
+    }
   }
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-0">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-4 px-4 py-4 lg:grid-cols-[280px_minmax(0,1fr)_340px] lg:px-6">
-        <aside className="hidden rounded-lg border border-line bg-white p-4 shadow-sm lg:block">
-          <div className="mb-5">
-            <p className="text-sm font-semibold text-pine">VibeCraft</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-normal">구현 코치</h1>
-          </div>
-          <nav className="space-y-2">
-            {stepMeta.map((item, index) => {
-              const Icon = item.icon;
-              const active = item.id === step;
-              const passed = index < getStepIndex(step);
-
-              return (
-                <button
-                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition ${
-                    active
-                      ? "border-pine bg-mint text-pine"
-                      : passed
-                        ? "border-line bg-paper text-ink"
-                        : "border-transparent text-ink/65 hover:bg-paper"
-                  }`}
+    <div className="min-h-screen pb-24 lg:pb-0">
+      <div className="mx-auto grid min-h-screen max-w-[1580px] gap-4 px-3 py-3 md:px-5 lg:grid-cols-[260px_minmax(0,1fr)_360px]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-3 space-y-3">
+            <BrandPanel progress={progress} />
+            <nav className="rounded-lg border border-line bg-surface p-2 shadow-soft">
+              {steps.map((item, index) => (
+                <StepButton
+                  active={item.id === step}
+                  done={index < currentIndex}
+                  icon={item.icon}
                   key={item.id}
+                  label={item.label}
                   onClick={() => setStep(item.id)}
-                  type="button"
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="block truncate text-xs opacity-75">{item.description}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
+                  stepNumber={index + 1}
+                />
+              ))}
+            </nav>
+          </div>
         </aside>
 
         <main className="min-w-0">
-          <header className="mb-4 rounded-lg border border-line bg-white p-4 shadow-sm lg:hidden">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-pine">VibeCraft</p>
-                <h1 className="text-xl font-bold">{currentStep.label}</h1>
+          <MobileTopBar
+            currentStep={currentStep.short}
+            onChat={() => setChatOpen(true)}
+            progress={progress}
+            title="VibeCraft"
+          />
+          <div className="mb-3 rounded-lg border border-line bg-surface p-4 shadow-soft md:p-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="max-w-3xl">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <StepBadge icon={currentStep.icon} label={`${currentIndex + 1}/${steps.length} ${currentStep.label}`} />
+                  {role ? <MiniPill label={roleOptions.find((item) => item.id === role)?.title ?? "역할"} /> : null}
+                  <MiniPill label={selectedToolInfo.name} />
+                  <MiniPill label={selectedServiceInfo.title} />
+                </div>
+                <h1 className="text-2xl font-bold leading-tight tracking-normal text-ink md:text-4xl">{currentIntro.title}</h1>
+                <p className="mt-3 text-sm leading-6 text-muted md:text-base">{currentIntro.description}</p>
               </div>
-              <button
-                className="rounded-md border border-line p-2 text-ink"
-                onClick={() => setChatOpen(true)}
-                type="button"
-                aria-label="챗봇 열기"
-              >
-                <Bot className="h-5 w-5" />
-              </button>
+              <div className="rounded-lg border border-line bg-canvas p-3 text-sm leading-6 text-muted xl:w-72">
+                <p className="font-semibold text-ink">현재 행동</p>
+                <p className="mt-1">{currentIntro.action}</p>
+              </div>
             </div>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-paper">
-              <div
-                className="h-full rounded-full bg-pine transition-all"
-                style={{ width: `${((getStepIndex(step) + 1) / stepMeta.length) * 100}%` }}
-              />
-            </div>
-          </header>
+          </div>
 
           {notice ? (
-            <div className="mb-4 rounded-lg border border-amber/30 bg-amber/10 p-4 text-sm leading-6 text-amber">
-              {notice}
+            <div className="mb-3 flex items-start gap-3 rounded-lg border border-lemon/50 bg-lemon/15 p-3 text-sm leading-6 text-ink">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />
+              <p>{notice}</p>
             </div>
           ) : null}
 
-          <div className="rounded-lg border border-line bg-white/80 p-4 shadow-sm backdrop-blur md:p-6">{renderStep()}</div>
+          <section className="rounded-lg border border-line bg-surface p-3 shadow-soft md:p-5">{renderStep()}</section>
         </main>
 
         <aside className="hidden lg:block">
@@ -1011,48 +824,25 @@ export function VibeCraftApp() {
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-          <button
-            className="inline-flex items-center gap-2 rounded-md border border-line bg-white px-3 py-3 text-sm font-semibold disabled:opacity-40"
-            disabled={getStepIndex(step) === 0}
-            onClick={() => moveStep(-1)}
-            type="button"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            이전
-          </button>
-          <button
-            className="inline-flex items-center gap-2 rounded-md border border-pine bg-pine px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
-            disabled={getStepIndex(step) === stepMeta.length - 1}
-            onClick={() => moveStep(1)}
-            type="button"
-          >
-            다음
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <button
-        className="fixed bottom-24 right-4 z-30 rounded-full border border-pine bg-pine p-4 text-white shadow-panel lg:hidden"
-        onClick={() => setChatOpen(true)}
-        type="button"
-        aria-label="챗봇 열기"
-      >
-        <PanelRightOpen className="h-5 w-5" />
-      </button>
+      <MobileBottomBar
+        canGoBack={currentIndex > 0}
+        canGoNext={currentIndex < steps.length - 1}
+        currentLabel={currentStep.short}
+        onBack={() => go(-1)}
+        onChat={() => setChatOpen(true)}
+        onNext={() => go(1)}
+      />
 
       {chatOpen ? (
-        <div className="fixed inset-0 z-40 bg-ink/35 p-3 lg:hidden">
-          <div className="ml-auto flex h-full max-w-md flex-col rounded-lg bg-white p-4 shadow-panel">
-            <div className="mb-3 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-ink/45 p-3 lg:hidden">
+          <div className="ml-auto flex h-full max-w-md flex-col rounded-lg border border-line bg-surface shadow-strong">
+            <div className="flex items-center justify-between border-b border-line p-4">
               <div>
-                <p className="text-sm font-semibold text-pine">AI 도우미</p>
-                <h2 className="text-lg font-bold">{currentStep.label}</h2>
+                <p className="text-xs font-semibold uppercase text-teal">Assistant</p>
+                <h2 className="font-bold">AI 학습 도우미</h2>
               </div>
-              <button className="rounded-md border border-line p-2" onClick={() => setChatOpen(false)} type="button">
-                닫기
+              <button className="icon-button" onClick={() => setChatOpen(false)} type="button" aria-label="챗봇 닫기">
+                <X className="h-5 w-5" />
               </button>
             </div>
             <ChatPanel
@@ -1073,42 +863,245 @@ export function VibeCraftApp() {
   );
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-}) {
+function BrandPanel({ progress }: { progress: number }) {
   return (
-    <div className="max-w-3xl">
-      <p className="text-sm font-semibold text-pine">{eyebrow}</p>
-      <h2 className="mt-1 text-2xl font-bold tracking-normal md:text-3xl">{title}</h2>
-      <p className="mt-3 text-sm leading-6 text-ink/70 md:text-base">{description}</p>
+    <div className="rounded-lg border border-line bg-ink p-4 text-white shadow-soft">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-md bg-teal">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase text-lemon">Plan to Build</p>
+          <h2 className="text-xl font-bold">VibeCraft</h2>
+        </div>
+      </div>
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between text-xs text-white/70">
+          <span>전체 진행률</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-white/15">
+          <div className="h-full rounded-full bg-lemon transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function Panel({
-  title,
+function StepButton({
+  active,
+  done,
   icon: Icon,
-  children,
+  label,
+  onClick,
+  stepNumber,
 }: {
-  title: string;
+  active: boolean;
+  done: boolean;
   icon: typeof GraduationCap;
-  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  stepNumber: number;
 }) {
   return (
-    <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-3">
-        <Icon className="h-5 w-5 text-pine" />
-        <h3 className="text-lg font-semibold">{title}</h3>
+    <button
+      className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition ${
+        active ? "bg-teal text-white shadow-soft" : done ? "bg-canvas text-ink" : "text-muted hover:bg-canvas hover:text-ink"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <span
+        className={`grid h-8 w-8 shrink-0 place-items-center rounded-md border text-xs font-bold ${
+          active ? "border-white/20 bg-white/15" : done ? "border-leaf/30 bg-leaf/10 text-leaf" : "border-line bg-surface"
+        }`}
+      >
+        {done && !active ? <Check className="h-4 w-4" /> : stepNumber}
+      </span>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{label}</span>
+      {active ? <ChevronRight className="h-4 w-4 shrink-0" /> : null}
+    </button>
+  );
+}
+
+function MobileTopBar({
+  currentStep,
+  onChat,
+  progress,
+  title,
+}: {
+  currentStep: string;
+  onChat: () => void;
+  progress: number;
+  title: string;
+}) {
+  return (
+    <header className="mb-3 rounded-lg border border-line bg-surface p-3 shadow-soft lg:hidden">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase text-teal">{currentStep}</p>
+          <h1 className="text-lg font-bold">{title}</h1>
+        </div>
+        <button className="icon-button" onClick={onChat} type="button" aria-label="챗봇 열기">
+          <Bot className="h-5 w-5" />
+        </button>
       </div>
-      {children}
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas">
+        <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${progress}%` }} />
+      </div>
+    </header>
+  );
+}
+
+function MobileBottomBar({
+  canGoBack,
+  canGoNext,
+  currentLabel,
+  onBack,
+  onChat,
+  onNext,
+}: {
+  canGoBack: boolean;
+  canGoNext: boolean;
+  currentLabel: string;
+  onBack: () => void;
+  onChat: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 backdrop-blur lg:hidden">
+      <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <button className="nav-button" disabled={!canGoBack} onClick={onBack} type="button">
+          <ArrowLeft className="h-4 w-4" />
+          이전
+        </button>
+        <button className="icon-button h-11 w-11" onClick={onChat} type="button" aria-label="챗봇 열기">
+          <PanelRightOpen className="h-5 w-5" />
+        </button>
+        <button className="nav-button justify-end bg-ink text-white" disabled={!canGoNext} onClick={onNext} type="button">
+          {currentLabel}
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
+}
+
+function WorkSurface({
+  action,
+  children,
+  icon: Icon,
+  title,
+}: {
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  icon: typeof GraduationCap;
+  title: string;
+}) {
+  return (
+    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-canvas text-teal">
+            <Icon className="h-5 w-5" />
+          </span>
+          <h3 className="text-lg font-bold">{title}</h3>
+        </div>
+        {action}
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function ChoiceCard({
+  description,
+  icon: Icon,
+  meta,
+  onClick,
+  selected,
+  title,
+}: {
+  description: string;
+  icon: typeof GraduationCap;
+  meta: string;
+  onClick: () => void;
+  selected: boolean;
+  title: string;
+}) {
+  return (
+    <button
+      className={`group relative min-h-52 rounded-lg border p-4 text-left transition ${
+        selected
+          ? "border-teal bg-teal text-white shadow-strong"
+          : "border-line bg-surface hover:-translate-y-1 hover:border-teal hover:shadow-strong"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <span
+        className={`mb-5 grid h-11 w-11 place-items-center rounded-md ${
+          selected ? "bg-white/15 text-white" : "bg-canvas text-teal group-hover:bg-teal group-hover:text-white"
+        }`}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <h3 className="text-xl font-bold">{title}</h3>
+      <p className={`mt-3 text-sm leading-6 ${selected ? "text-white/82" : "text-muted"}`}>{description}</p>
+      <p className={`mt-5 text-xs leading-5 ${selected ? "text-white/72" : "text-muted"}`}>{meta}</p>
+      {selected ? (
+        <span className="absolute right-4 top-4 grid h-7 w-7 place-items-center rounded-full bg-white text-teal">
+          <Check className="h-4 w-4" />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function FeatureTile({
+  accent,
+  description,
+  icon: Icon,
+  title,
+}: {
+  accent: "teal" | "blue";
+  description: string;
+  icon: typeof GraduationCap;
+  title: string;
+}) {
+  return (
+    <div className="rounded-lg border border-line bg-surface p-5 shadow-soft">
+      <div className={`mb-5 grid h-10 w-10 place-items-center rounded-md ${accent === "teal" ? "bg-teal text-white" : "bg-blue text-white"}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="text-lg font-bold">{title}</h3>
+      <p className="mt-3 text-sm leading-6 text-muted">{description}</p>
+    </div>
+  );
+}
+
+function StatusTile({ icon: Icon, label, value }: { icon: typeof GraduationCap; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/8 p-4">
+      <Icon className="mb-3 h-5 w-5 text-lemon" />
+      <p className="text-xs text-white/60">{label}</p>
+      <p className="mt-1 text-lg font-bold">{value}</p>
+    </div>
+  );
+}
+
+function StepBadge({ icon: Icon, label }: { icon: typeof GraduationCap; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-md bg-teal/10 px-3 py-1.5 text-xs font-bold text-teal">
+      <Icon className="h-4 w-4" />
+      {label}
+    </span>
+  );
+}
+
+function MiniPill({ label }: { label: string }) {
+  return <span className="rounded-md border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-muted">{label}</span>;
 }
 
 function PrimaryButton({
@@ -1123,12 +1116,7 @@ function PrimaryButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      className="inline-flex items-center justify-center gap-2 rounded-md border border-pine bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
+    <button className="action-button bg-ink text-white" disabled={disabled} onClick={onClick} type="button">
       {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
       {children}
     </button>
@@ -1147,74 +1135,58 @@ function SecondaryButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      className="inline-flex items-center justify-center gap-2 rounded-md border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-pine hover:text-pine disabled:cursor-not-allowed disabled:opacity-60"
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
+    <button className="action-button border border-line bg-surface text-ink hover:border-blue hover:text-blue" disabled={disabled} onClick={onClick} type="button">
       {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
       {children}
     </button>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: typeof GraduationCap;
-}) {
+function InsightStrip({ icon: Icon, text }: { icon: typeof GraduationCap; text: string }) {
   return (
-    <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
-      <Icon className="mb-4 h-6 w-6 text-pine" />
-      <p className="text-sm text-ink/60">{label}</p>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
+    <div className="flex items-start gap-3 rounded-lg border border-blue/20 bg-blue/8 p-3 text-sm leading-6 text-muted">
+      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-blue" />
+      <p>{text}</p>
     </div>
   );
 }
 
-function List({ items, ordered = false }: { items: string[]; ordered?: boolean }) {
-  const Component = ordered ? "ol" : "ul";
-
+function StepNote({ items, title }: { items: string[]; title: string }) {
   return (
-    <Component className={`mt-3 space-y-2 text-sm leading-6 text-ink/75 ${ordered ? "list-decimal pl-5" : "list-disc pl-5"}`}>
-      {items.map((item) => (
-        <li key={item}>{item}</li>
-      ))}
-    </Component>
+    <div className="rounded-lg border border-line bg-canvas p-4">
+      <h4 className="font-bold">{title}</h4>
+      <BulletList items={items} />
+    </div>
   );
 }
 
 function ChecklistRow({
   item,
-  status,
   onChange,
+  status,
 }: {
   item: ChecklistItem;
-  status: ChecklistStatus;
   onChange: (status: ChecklistStatus) => void;
+  status: ChecklistStatus;
 }) {
   const StatusIcon = statusMeta[status].icon;
-
   return (
-    <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <StatusIcon className="h-5 w-5 shrink-0 text-pine" />
-            <h3 className="font-semibold">{item.title}</h3>
+    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+        <div className="flex min-w-0 gap-3">
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border ${statusMeta[status].className}`}>
+            <StatusIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-bold">{item.title}</h3>
+            <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
           </div>
-          <p className="mt-2 text-sm leading-6 text-ink/65">{item.description}</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
+        <div className="grid grid-cols-4 gap-2">
           {(Object.keys(statusMeta) as ChecklistStatus[]).map((nextStatus) => (
             <button
-              className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                status === nextStatus ? statusMeta[nextStatus].className : "border-line bg-white text-ink/65 hover:border-pine"
+              className={`rounded-md border px-2 py-2 text-xs font-bold transition ${
+                status === nextStatus ? statusMeta[nextStatus].className : "border-line bg-canvas text-muted hover:border-teal hover:text-teal"
               }`}
               key={nextStatus}
               onClick={() => onChange(nextStatus)}
@@ -1230,133 +1202,191 @@ function ChecklistRow({
 }
 
 function SearchBox({
-  value,
   onChange,
   placeholder,
+  value,
 }: {
-  value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  value: string;
 }) {
   return (
     <label className="relative block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/45" />
-      <input
-        className="w-full rounded-lg border border-line bg-white py-3 pl-10 pr-3 text-sm"
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        value={value}
-      />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+      <input className="field h-12 pl-10" onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
     </label>
   );
 }
 
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: {
-  icon: typeof GraduationCap;
-  title: string;
-  description: string;
-  actionLabel: string;
-  onAction: () => void;
-}) {
+function TermTile({ role, term }: { role: Role; term: (typeof terms)[number] }) {
   return (
-    <div className="rounded-lg border border-dashed border-line bg-paper p-8 text-center">
-      <Icon className="mx-auto mb-4 h-8 w-8 text-pine" />
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink/70">{description}</p>
-      <button
-        className="mt-5 rounded-md border border-pine bg-pine px-4 py-3 text-sm font-semibold text-white"
-        onClick={onAction}
-        type="button"
-      >
-        {actionLabel}
+    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase text-teal">{term.category}</p>
+          <h3 className="mt-1 text-lg font-bold">{term.term}</h3>
+        </div>
+        <BookOpen className="h-5 w-5 shrink-0 text-teal" />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
+      <p className="mt-3 rounded-md bg-canvas p-3 text-sm leading-6 text-ink">{term.examples[role]}</p>
+      <TokenGrid items={term.related} />
+    </div>
+  );
+}
+
+function PromptTile({ onCopy, prompt }: { onCopy: () => void; prompt: (typeof promptTemplates)[number] }) {
+  return (
+    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
+      <p className="text-xs font-bold uppercase text-teal">{prompt.category}</p>
+      <h3 className="mt-2 text-lg font-bold">{prompt.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
+      <CodeBlock text={prompt.template} />
+      <button className="action-button mt-4 border border-line bg-surface text-ink hover:border-teal hover:text-teal" onClick={onCopy} type="button">
+        <Copy className="h-4 w-4" />
+        복사
       </button>
     </div>
   );
 }
 
-function ChatPanel({
-  messages,
-  chatInput,
-  onChangeInput,
-  onSend,
-  stepLabel,
-  selectedTool,
-  selectedService,
-  projectSummary,
-  compact = false,
+function TokenGrid({ items }: { items: string[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span className="rounded-md border border-line bg-canvas px-3 py-1.5 text-xs font-bold text-ink" key={item}>
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
+      {items.map((item) => (
+        <li className="flex gap-2" key={item}>
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function NumberList({ items }: { items: string[] }) {
+  return (
+    <ol className="mt-3 space-y-3 text-sm leading-6 text-muted">
+      {items.map((item, index) => (
+        <li className="flex gap-3" key={item}>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-ink text-xs font-bold text-white">{index + 1}</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function CodeBlock({ text }: { text: string }) {
+  return <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-line bg-ink p-4 text-xs leading-5 text-white/82">{text}</pre>;
+}
+
+function EmptyState({
+  actionLabel,
+  description,
+  icon: Icon,
+  onAction,
+  title,
 }: {
-  messages: ChatMessage[];
-  chatInput: string;
-  onChangeInput: (value: string) => void;
-  onSend: () => void;
-  stepLabel: string;
-  selectedTool: string;
-  selectedService: string;
-  projectSummary?: string;
-  compact?: boolean;
+  actionLabel: string;
+  description: string;
+  icon: typeof GraduationCap;
+  onAction: () => void;
+  title: string;
 }) {
   return (
-    <div className={`flex ${compact ? "h-full" : "sticky top-4 h-[calc(100vh-32px)]"} flex-col rounded-lg border border-line bg-white shadow-sm`}>
+    <div className="grid min-h-80 place-items-center rounded-lg border border-dashed border-line bg-canvas p-8 text-center">
+      <div>
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-md bg-teal text-white">
+          <Icon className="h-6 w-6" />
+        </div>
+        <h3 className="mt-5 text-xl font-bold">{title}</h3>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted">{description}</p>
+        <button className="action-button mx-auto mt-5 bg-ink text-white" onClick={onAction} type="button">
+          <ArrowRight className="h-4 w-4" />
+          {actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChatPanel({
+  chatInput,
+  compact = false,
+  messages,
+  onChangeInput,
+  onSend,
+  projectSummary,
+  selectedService,
+  selectedTool,
+  stepLabel,
+}: {
+  chatInput: string;
+  compact?: boolean;
+  messages: ChatMessage[];
+  onChangeInput: (value: string) => void;
+  onSend: () => void;
+  projectSummary?: string;
+  selectedService: string;
+  selectedTool: string;
+  stepLabel: string;
+}) {
+  return (
+    <div className={`flex ${compact ? "h-full border-0 shadow-none" : "sticky top-3 h-[calc(100vh-24px)]"} flex-col rounded-lg border border-line bg-surface shadow-soft`}>
       <div className="border-b border-line p-4">
         <div className="flex items-center gap-3">
-          <Bot className="h-5 w-5 text-pine" />
+          <div className="grid h-10 w-10 place-items-center rounded-md bg-blue text-white">
+            <Bot className="h-5 w-5" />
+          </div>
           <div>
-            <h2 className="font-semibold">AI 학습 도우미</h2>
-            <p className="text-xs text-ink/60">{stepLabel} 단계</p>
+            <p className="text-xs font-bold uppercase text-blue">Context helper</p>
+            <h2 className="font-bold">AI 학습 도우미</h2>
           </div>
         </div>
-        <div className="mt-4 grid gap-2 text-xs text-ink/65">
-          <span className="rounded-md bg-paper px-2 py-1">도구: {selectedTool}</span>
-          <span className="rounded-md bg-paper px-2 py-1">유형: {selectedService}</span>
-          {projectSummary ? <span className="rounded-md bg-paper px-2 py-1">요약: {projectSummary}</span> : null}
+        <div className="mt-4 grid gap-2 text-xs">
+          <MiniPill label={`단계: ${stepLabel}`} />
+          <MiniPill label={`도구: ${selectedTool}`} />
+          <MiniPill label={`유형: ${selectedService}`} />
+          {projectSummary ? <MiniPill label={`요약: ${projectSummary}`} /> : null}
         </div>
       </div>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.map((message, index) => (
           <div
-            className={`rounded-lg border p-3 text-sm leading-6 ${
-              message.role === "user" ? "ml-6 border-pine/30 bg-mint text-ink" : "mr-6 border-line bg-paper text-ink/78"
+            className={`max-w-[92%] rounded-lg border p-3 text-sm leading-6 ${
+              message.role === "user" ? "ml-auto border-teal/30 bg-teal/10 text-ink" : "border-line bg-canvas text-ink"
             }`}
             key={`${message.role}-${index}`}
           >
             {message.content}
-            {message.links?.length ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {message.links.map((link) => (
-                  <span className="rounded-md bg-white px-2 py-1 text-xs font-medium text-pine" key={link}>
-                    {link}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            {message.links?.length ? <TokenGrid items={message.links} /> : null}
           </div>
         ))}
       </div>
       <div className="border-t border-line p-3">
-        <div className="flex gap-2">
+        <div className="grid grid-cols-[1fr_auto] gap-2">
           <input
-            className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm"
+            className="field h-11"
             onChange={(event) => onChangeInput(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                onSend();
-              }
+              if (event.key === "Enter") onSend();
             }}
             placeholder="질문 입력"
             value={chatInput}
           />
-          <button
-            className="rounded-md border border-pine bg-pine px-3 text-white"
-            onClick={onSend}
-            type="button"
-            aria-label="질문 보내기"
-          >
+          <button className="icon-button h-11 w-11 bg-ink text-white" onClick={onSend} type="button" aria-label="질문 보내기">
             <Send className="h-4 w-4" />
           </button>
         </div>
