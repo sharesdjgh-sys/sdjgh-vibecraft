@@ -1,52 +1,52 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   BookOpen,
-  Bot,
   Check,
   CheckCircle2,
   ChevronRight,
-  Circle,
-  CircleDashed,
   ClipboardList,
   Code2,
   Copy,
-  Database,
+  ExternalLink,
   FileText,
-  GraduationCap,
-  LayoutDashboard,
-  ListChecks,
-  Loader2,
+  Flag,
+  Layers3,
+  Lightbulb,
   MessageSquare,
-  PanelRightOpen,
+  Pencil,
+  Play,
   Rocket,
-  School,
+  Save,
   Search,
   Send,
-  ShieldCheck,
   Smartphone,
-  Sparkles,
   Terminal,
   Upload,
-  UserRound,
   Wrench,
-  X,
-  XCircle,
 } from "lucide-react";
 import {
   baseChecklist,
   conceptCards,
   deploymentChecks,
   promptTemplates,
-  roleOptions,
   serviceTypes,
+  softwareChecklist,
   terms,
   tools,
 } from "@/lib/vibecraft-data";
+import {
+  calculateProjectProgress,
+  mapAssistantLinkLabel,
+  phaseMetadata,
+  phaseOrder,
+  type PhaseId,
+  type ResourceId,
+} from "@/lib/vibecraft-navigation";
 import type {
   ChecklistItem,
   ChecklistStatus,
@@ -56,19 +56,33 @@ import type {
   ServiceType,
   ToolSlug,
 } from "@/lib/types";
-
-type StepId =
-  | "role"
-  | "start"
-  | "recommendation"
-  | "concept"
-  | "tools"
-  | "service"
-  | "checklist"
-  | "terms"
-  | "prompts"
-  | "error"
-  | "deploy";
+import {
+  BriefList,
+  JourneySketch,
+  MetaRow,
+  MissionCard,
+  ProjectEmptyState,
+  ResourceDock,
+  ResourceSwitcher,
+  RoleSelector,
+  ShapeTabs,
+  StartModePicker,
+  TaskRow,
+  resourceMetadata,
+  type ShapeTab,
+  type StartMode,
+} from "./vibecraft-domain-ui";
+import {
+  Eyebrow,
+  InlineNotice,
+  MobilePhaseNav,
+  PhaseRail,
+  PrimaryButton,
+  ProgressBar,
+  ResourceDrawer,
+  SecondaryButton,
+  SectionHeading,
+} from "./vibecraft-ui";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -76,101 +90,51 @@ type ChatMessage = {
   links?: string[];
 };
 
-const steps: Array<{ id: StepId; label: string; short: string; icon: typeof GraduationCap }> = [
-  { id: "role", label: "역할 선택", short: "역할", icon: GraduationCap },
-  { id: "start", label: "입력", short: "입력", icon: Upload },
-  { id: "recommendation", label: "추천", short: "추천", icon: LayoutDashboard },
-  { id: "concept", label: "개념", short: "개념", icon: BookOpen },
-  { id: "tools", label: "도구", short: "도구", icon: Code2 },
-  { id: "service", label: "유형", short: "유형", icon: Smartphone },
-  { id: "checklist", label: "실습", short: "실습", icon: ListChecks },
-  { id: "terms", label: "용어", short: "용어", icon: Search },
-  { id: "prompts", label: "프롬프트", short: "프롬프트", icon: ClipboardList },
-  { id: "error", label: "에러 해결", short: "에러", icon: Wrench },
-  { id: "deploy", label: "배포 점검", short: "점검", icon: Rocket },
+const initialChatMessages: ChatMessage[] = [
+  {
+    role: "assistant",
+    content:
+      "지금 하고 있는 작업과 막힌 지점을 적어주세요. 프로젝트 문맥을 기준으로 다음 행동 하나를 정리해드릴게요.",
+    links: ["실습", "용어", "에러"],
+  },
 ];
 
-const stepIntro: Record<StepId, { title: string; description: string; action: string }> = {
-  role: {
-    title: "누구의 눈높이로 코칭할까요?",
-    description: "역할에 따라 예시, 안내 문장, 추천 이유가 달라집니다.",
-    action: "역할을 선택하면 바로 다음 단계로 이동합니다.",
-  },
-  start: {
-    title: "기획서가 있으면 업로드하고, 없으면 아이디어만 적으세요.",
-    description: "PlanCraft 문서를 분석하거나 짧은 아이디어를 질문형 브리프로 바꿉니다.",
-    action: "txt, md는 즉시 분석하고 PDF는 핵심 내용을 함께 붙여넣는 방식으로 시작합니다.",
-  },
-  recommendation: {
-    title: "추천 결과를 작업 계획으로 바꿉니다.",
-    description: "도구, 서비스 유형, 기술 스택, 난이도, 구현 순서를 한 화면에서 조정합니다.",
-    action: "마음에 들지 않으면 도구와 유형 단계에서 직접 바꾸면 됩니다.",
-  },
-  concept: {
-    title: "바이브코딩에서 사람이 해야 할 일을 분리합니다.",
-    description: "AI에게 맡길 일과 사용자가 직접 확인해야 할 일을 짧게 정리합니다.",
-    action: "개념을 확인한 뒤 도구 선택으로 넘어가세요.",
-  },
-  tools: {
-    title: "Codex, Claude, Antigravity 중 현재 프로젝트에 맞는 도구를 고릅니다.",
-    description: "게임형 선택 감각은 살리되, 실제 구현 기준으로 비교합니다.",
-    action: "도구 카드를 선택하면 아래 가이드가 즉시 바뀝니다.",
-  },
-  service: {
-    title: "결과물이 쓰일 화면에 맞춰 기술 조합을 고릅니다.",
-    description: "웹, 모바일 최적화 웹앱, 자동화 도구 중 가장 맞는 형태를 선택합니다.",
-    action: "선택한 유형에 따라 화면 목록과 기술 스택이 바뀝니다.",
-  },
-  checklist: {
-    title: "완성까지 필요한 일을 상태로 관리합니다.",
-    description: "대기, 진행, 완료, 막힘을 표시하고 막힌 항목은 에러 해결로 넘깁니다.",
-    action: "실제로 끝낸 항목부터 완료로 바꿔보세요.",
-  },
-  terms: {
-    title: "막히는 용어를 바로 찾아봅니다.",
-    description: "터미널, GitHub, Vercel, Neon DB 같은 개념을 역할별 예시로 설명합니다.",
-    action: "검색창에 모르는 단어를 입력하세요.",
-  },
-  prompts: {
-    title: "AI에게 바로 붙여넣을 요청문을 준비합니다.",
-    description: "기획서 구현, 모바일 UI, 에러 해결, 배포 점검 템플릿을 제공합니다.",
-    action: "복사 버튼을 누르면 현재 프로젝트 요약이 자동으로 들어갑니다.",
-  },
-  error: {
-    title: "에러 메시지를 다음 행동으로 바꿉니다.",
-    description: "원인 후보와 확인 순서를 초보자 기준으로 정리합니다.",
-    action: "비밀키와 DB 주소는 제거하고 에러 로그만 붙여넣으세요.",
-  },
-  deploy: {
-    title: "공개 전 마지막 점검을 끝냅니다.",
-    description: "모바일 화면, 버튼 동작, 환경변수, DB 연결, 첫 사용자 흐름을 확인합니다.",
-    action: "모든 항목이 완료되면 실제 배포 링크를 공유할 준비가 된 상태입니다.",
-  },
+const MAX_PLAN_CHARACTERS = 200_000;
+
+const serviceRoadmaps: Record<ServiceType, string[]> = {
+  web: [
+    "핵심 사용자가 처음 만나는 화면과 행동을 정합니다.",
+    "입력 → 처리 → 결과의 한 흐름을 먼저 구현합니다.",
+    "필요한 경우 데이터 저장과 외부 연동을 연결합니다.",
+    "모바일과 데스크톱에서 주요 흐름을 확인합니다.",
+    "공개 URL에서 첫 사용자 흐름을 다시 점검합니다.",
+  ],
+  "mobile-web": [
+    "스마트폰에서 가장 먼저 할 행동을 한 가지로 정합니다.",
+    "엄지손가락으로 입력 → 결과 흐름을 완료할 수 있게 만듭니다.",
+    "작은 화면의 키보드·하단 영역·긴 텍스트를 점검합니다.",
+    "필요한 경우 데이터 저장과 알림 흐름을 연결합니다.",
+    "실제 스마트폰에서 공개 URL을 열어 확인합니다.",
+  ],
+  software: [
+    "처리할 입력 자료와 기대 결과를 한 사례로 정합니다.",
+    "입력 → 실행 → 결과의 한 흐름을 구현합니다.",
+    "잘못된 입력과 실패 메시지를 점검합니다.",
+    "서로 다른 자료로 실행 결과를 반복 확인합니다.",
+    "저장소 또는 다운로드 주소와 실행 방법을 공유합니다.",
+  ],
 };
 
-const roleIcons: Record<Role, typeof GraduationCap> = {
-  student: GraduationCap,
-  teacher: School,
-  adult: UserRound,
-};
-
-const toolIcons: Record<ToolSlug, typeof Code2> = {
+const toolIcons: Record<ToolSlug, LucideIcon> = {
   codex: Code2,
   claude: MessageSquare,
-  antigravity: Sparkles,
+  antigravity: Layers3,
 };
 
-const serviceIcons: Record<ServiceType, typeof Code2> = {
+const serviceIcons: Record<ServiceType, LucideIcon> = {
   web: Code2,
   "mobile-web": Smartphone,
   software: Terminal,
-};
-
-const statusMeta: Record<ChecklistStatus, { label: string; icon: typeof Circle; className: string }> = {
-  pending: { label: "대기", icon: Circle, className: "border-line bg-surface text-muted" },
-  active: { label: "진행", icon: CircleDashed, className: "border-blue/40 bg-blue/10 text-blue" },
-  done: { label: "완료", icon: CheckCircle2, className: "border-leaf/40 bg-leaf/10 text-leaf" },
-  blocked: { label: "막힘", icon: XCircle, className: "border-coral/40 bg-coral/10 text-coral" },
 };
 
 function usePersistentState<T>(key: string, initialValue: T) {
@@ -189,7 +153,12 @@ function usePersistentState<T>(key: string, initialValue: T) {
   }, [key]);
 
   useEffect(() => {
-    if (ready) window.localStorage.setItem(key, JSON.stringify(value));
+    if (!ready) return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Private browsing or a full quota should not break the working session.
+    }
   }, [key, ready, value]);
 
   return [value, setValue] as const;
@@ -206,22 +175,60 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data;
 }
 
-function stepIndex(step: StepId) {
-  return Math.max(
-    0,
-    steps.findIndex((item) => item.id === step),
+function linesFromText(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^(?:[-*•]\s+|\d+[.)]\s+)/, "").trim())
+        .filter(Boolean),
+    ),
   );
+}
+
+function validWebUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    const localHost =
+      url.hostname === "localhost" ||
+      url.hostname === "0.0.0.0" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname.endsWith(".local");
+    return url.protocol === "https:" && !localHost ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 export function VibeCraftApp() {
   const [sessionId] = usePersistentState("vc-session-id", "local-session");
+  const [phase, setPhase] = usePersistentState<PhaseId>("vc-phase", "start");
   const [role, setRole] = usePersistentState<Role | null>("vc-role", null);
-  const [step, setStep] = usePersistentState<StepId>("vc-step", "role");
-  const [recommendation, setRecommendation] = usePersistentState<Recommendation | null>("vc-recommendation", null);
+  const [recommendation, setRecommendation] = usePersistentState<Recommendation | null>(
+    "vc-recommendation",
+    null,
+  );
   const [selectedTool, setSelectedTool] = usePersistentState<ToolSlug | null>("vc-tool", null);
-  const [selectedServiceType, setSelectedServiceType] = usePersistentState<ServiceType | null>("vc-service-type", null);
-  const [checklistStatuses, setChecklistStatuses] = usePersistentState<Record<string, ChecklistStatus>>("vc-checklist", {});
-  const [deploymentStatuses, setDeploymentStatuses] = usePersistentState<Record<string, ChecklistStatus>>("vc-deploy-checks", {});
+  const [selectedServiceType, setSelectedServiceType] = usePersistentState<ServiceType | null>(
+    "vc-service-type",
+    null,
+  );
+  const [checklistStatuses, setChecklistStatuses] = usePersistentState<Record<string, ChecklistStatus>>(
+    "vc-checklist",
+    {},
+  );
+  const [deploymentStatuses, setDeploymentStatuses] = usePersistentState<
+    Record<string, ChecklistStatus>
+  >("vc-deploy-checks", {});
+  const [deploymentUrl, setDeploymentUrl] = usePersistentState("vc-deployment-url", "");
+  const [deploymentUrlConfirmed, setDeploymentUrlConfirmed] = usePersistentState(
+    "vc-deployment-url-confirmed",
+    false,
+  );
+
+  const [startMode, setStartMode] = useState<StartMode>("plan");
+  const [shapeTab, setShapeTab] = useState<ShapeTab>("brief");
+  const [resource, setResource] = useState<ResourceId | null>(null);
   const [planText, setPlanText] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [idea, setIdea] = useState("");
@@ -231,34 +238,102 @@ export function VibeCraftApp() {
   const [promptSearch, setPromptSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorSolution, setErrorSolution] = useState<ErrorSolution | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "막힌 내용을 적어주세요. 현재 단계와 선택한 도구 기준으로 다음 행동을 짧게 정리해드릴게요.",
-      links: ["실습", "용어", "에러"],
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const [editingBrief, setEditingBrief] = useState(false);
+  const [briefDraft, setBriefDraft] = useState({
+    summary: "",
+    targetUsers: "",
+    mainFeatures: "",
+  });
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const safePhase = (phaseOrder as readonly string[]).includes(phase) ? phase : "start";
   const activeRole = role ?? "student";
   const activeTool = selectedTool ?? recommendation?.recommendedTool ?? "codex";
-  const activeServiceType = selectedServiceType ?? recommendation?.recommendedServiceType ?? "web";
-  const currentIndex = stepIndex(step);
-  const currentStep = steps[currentIndex];
-  const currentIntro = stepIntro[step];
-  const progress = Math.round(((currentIndex + 1) / steps.length) * 100);
+  const activeServiceType =
+    selectedServiceType ?? recommendation?.recommendedServiceType ?? "web";
   const selectedToolInfo = tools.find((tool) => tool.slug === activeTool) ?? tools[0];
-  const selectedServiceInfo = serviceTypes.find((item) => item.id === activeServiceType) ?? serviceTypes[0];
-  const checklistItems = recommendation?.checklist ?? baseChecklist;
+  const recommendedToolInfo =
+    tools.find((tool) => tool.slug === recommendation?.recommendedTool) ?? tools[0];
+  const selectedServiceInfo =
+    serviceTypes.find((item) => item.id === activeServiceType) ?? serviceTypes[0];
+  const recommendedServiceInfo =
+    serviceTypes.find((item) => item.id === recommendation?.recommendedServiceType) ??
+    serviceTypes[0];
+  const displayedStack =
+    selectedServiceType && selectedServiceType !== recommendation?.recommendedServiceType
+      ? selectedServiceInfo.stack
+      : recommendation?.recommendedStack ?? selectedServiceInfo.stack;
+  const checklistItems = useMemo(() => {
+    return activeServiceType === "software"
+      ? softwareChecklist
+      : baseChecklist;
+  }, [activeServiceType]);
+  const deploymentItems = useMemo(() => {
+    const stack = new Set(displayedStack);
+    return deploymentChecks.filter((item) => {
+      if (item.id === "mobile-layout" && activeServiceType === "software") return false;
+      if (item.id === "db-ready" && !stack.has("Neon DB")) return false;
+      if (
+        item.id === "env-ready" &&
+        !stack.has("Neon DB") &&
+        !stack.has("외부 API")
+      )
+        return false;
+      return true;
+    });
+  }, [activeServiceType, displayedStack]);
+  const displayedRoadmap =
+    selectedServiceType && selectedServiceType !== recommendation?.recommendedServiceType
+      ? serviceRoadmaps[selectedServiceType]
+      : recommendation?.roadmap ?? serviceRoadmaps[activeServiceType];
+  const verifiedDeploymentUrl = useMemo(() => validWebUrl(deploymentUrl), [deploymentUrl]);
+
+  const projectProgress = useMemo(
+    () =>
+      calculateProjectProgress({
+        roleSelected: Boolean(role),
+        recommendationReady: Boolean(recommendation),
+        toolSelected: Boolean(selectedTool),
+        serviceSelected: Boolean(selectedServiceType),
+        checklistItemIds: checklistItems.map((item) => item.id),
+        checklistStatuses,
+        deploymentItemIds: deploymentItems.map((item) => item.id),
+        deploymentStatuses,
+        deploymentUrl: deploymentUrlConfirmed ? verifiedDeploymentUrl : "",
+      }),
+    [
+      checklistItems,
+      checklistStatuses,
+      deploymentStatuses,
+      deploymentItems,
+      deploymentUrlConfirmed,
+      verifiedDeploymentUrl,
+      recommendation,
+      role,
+      selectedServiceType,
+      selectedTool,
+    ],
+  );
+
+  const currentMission = useMemo(
+    () =>
+      checklistItems.find((item) => checklistStatuses[item.id] === "active") ??
+      checklistItems.find((item) => (checklistStatuses[item.id] ?? "pending") === "pending") ??
+      checklistItems.find((item) => checklistStatuses[item.id] === "blocked") ??
+      null,
+    [checklistItems, checklistStatuses],
+  );
 
   const filteredTerms = useMemo(() => {
     const query = termSearch.trim().toLowerCase();
     if (!query) return terms;
     return terms.filter((item) =>
-      [item.term, item.category, item.plainDescription, ...item.related].some((value) => value.toLowerCase().includes(query)),
+      [item.term, item.category, item.plainDescription, ...item.related].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
     );
   }, [termSearch]);
 
@@ -268,69 +343,160 @@ export function VibeCraftApp() {
       const matchesTool = item.tool === "all" || item.tool === activeTool;
       const matchesQuery =
         !query ||
-        [item.title, item.category, item.description].some((value) => value.toLowerCase().includes(query));
+        [item.title, item.category, item.description].some((value) =>
+          value.toLowerCase().includes(query),
+        );
       return matchesTool && matchesQuery;
     });
   }, [activeTool, promptSearch]);
 
-  function go(delta: number) {
-    setStep(steps[Math.min(steps.length - 1, Math.max(0, currentIndex + delta))].id);
+  const closeResource = useCallback(() => setResource(null), []);
+
+  useEffect(() => {
+    if (phase !== safePhase) setPhase("start");
+  }, [phase, safePhase, setPhase]);
+
+  function scrollToTop() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }
 
-  function setChecklist(item: ChecklistItem, status: ChecklistStatus) {
-    setChecklistStatuses((current) => ({ ...current, [item.id]: status }));
-    void fetch("/api/checklist-progress", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, checklistId: item.id, status }),
-    });
+  function applyNewRecommendation(nextRecommendation: Recommendation) {
+    setRecommendation(nextRecommendation);
+    // Recommendations remain suggestions until the user explicitly confirms both choices.
+    setSelectedTool(null);
+    setSelectedServiceType(null);
+    setChecklistStatuses({});
+    setDeploymentStatuses({});
+    setDeploymentUrl("");
+    setDeploymentUrlConfirmed(false);
+    setEditingBrief(false);
+    setBriefDraft({ summary: "", targetUsers: "", mainFeatures: "" });
+    setErrorMessage("");
+    setErrorSolution(null);
+    setChatInput("");
+    setChatMessages([...initialChatMessages]);
+    setResource(null);
   }
 
-  function setDeployCheck(item: ChecklistItem, status: ChecklistStatus) {
-    setDeploymentStatuses((current) => ({ ...current, [item.id]: status }));
+  function handleRoleChange(nextRole: Role) {
+    setRole(nextRole);
+    if (interviewQuestions.length) {
+      setInterviewQuestions([]);
+      setInterviewAnswers({});
+      setNotice("역할이 바뀌어 아이디어 확인 질문을 새로 받아야 합니다.");
+    }
+  }
+
+  function handleIdeaChange(nextIdea: string) {
+    setIdea(nextIdea);
+    if (interviewQuestions.length) {
+      setInterviewQuestions([]);
+      setInterviewAnswers({});
+    }
+  }
+
+  function startBuild() {
+    if (!selectedTool) {
+      setShapeTab("tool");
+      setNotice("추천을 확인한 뒤 이번 프로젝트에 사용할 제작 도구를 직접 선택해주세요.");
+      return;
+    }
+    if (!selectedServiceType) {
+      setShapeTab("service");
+      setNotice("결과물이 사용될 환경에 맞춰 서비스 형태를 직접 선택해주세요.");
+      return;
+    }
+    navigatePhase("build");
+  }
+
+  function selectServiceType(nextServiceType: ServiceType) {
+    if (selectedServiceType && selectedServiceType !== nextServiceType) {
+      setChecklistStatuses({});
+      setDeploymentStatuses({});
+      setDeploymentUrl("");
+      setDeploymentUrlConfirmed(false);
+      setNotice("서비스 형태가 바뀌어 제작·공개 체크 상태를 새 기준으로 초기화했습니다.");
+    } else {
+      setNotice(null);
+    }
+    setSelectedServiceType(nextServiceType);
+  }
+
+  function navigatePhase(nextPhase: PhaseId) {
+    setNotice(null);
+    if (nextPhase !== "start" && !recommendation) {
+      setNotice("먼저 기획서나 아이디어를 분석해 프로젝트 브리프를 만들어주세요.");
+      setPhase("start");
+      return;
+    }
+    if (
+      (nextPhase === "build" || nextPhase === "ship") &&
+      (!selectedTool || !selectedServiceType)
+    ) {
+      setPhase("shape");
+      setShapeTab(!selectedTool ? "tool" : "service");
+      setNotice("제작을 시작하기 전에 도구와 서비스 형태를 직접 확정해주세요.");
+      return;
+    }
+    setPhase(nextPhase);
+    scrollToTop();
   }
 
   async function handleFileUpload(file: File) {
     setUploadedFileName(file.name);
     setNotice(null);
 
-    if (file.size > 1024 * 1024 * 4) {
-      setNotice("파일은 4MB 이하로 준비해주세요. 긴 기획서는 핵심 부분만 붙여넣는 편이 안전합니다.");
+    if (file.size > 1024 * 1024) {
+      setNotice("파일은 1MB 이하로 준비해주세요. 긴 기획서는 핵심 범위만 남기는 편이 정확합니다.");
       return;
     }
 
     if (file.name.toLowerCase().endsWith(".pdf")) {
       setPlanText(
-        `[PDF 파일명: ${file.name}]\n현재 MVP는 txt, md 텍스트 추출을 우선 지원합니다. PDF는 PlanCraft 요약문을 아래 입력창에 붙여넣으면 같은 방식으로 분석할 수 있습니다.`,
+        "[PDF 파일: " +
+          file.name +
+          "]\nPDF 본문 자동 추출은 아직 지원하지 않습니다. PlanCraft의 핵심 요약을 이 아래에 붙여넣어주세요.",
       );
-      setNotice("PDF는 선택됐습니다. 정확한 추천을 위해 핵심 내용을 입력창에 함께 붙여넣어주세요.");
+      setNotice("PDF 파일명만 불러왔습니다. 정확한 분석을 위해 핵심 내용을 함께 붙여넣어주세요.");
       return;
     }
 
-    setPlanText(await file.text());
+    const text = await file.text();
+    if (text.length > MAX_PLAN_CHARACTERS) {
+      setNotice("기획서가 200,000자를 넘습니다. 첫 버전에 필요한 범위만 남겨주세요.");
+      return;
+    }
+    setPlanText(text);
   }
 
   async function analyzePlan() {
     if (!role) {
-      setNotice("먼저 역할을 선택해주세요.");
-      setStep("role");
+      setNotice("설명 방식을 맞추기 위해 먼저 역할을 선택해주세요.");
       return;
     }
     if (planText.trim().length < 10) {
-      setNotice("기획서 내용이 너무 짧습니다. 사용자와 핵심 기능을 포함해 입력해주세요.");
+      setNotice("사용자와 핵심 기능이 드러나도록 기획서 내용을 조금 더 입력해주세요.");
+      return;
+    }
+    if (planText.length > MAX_PLAN_CHARACTERS) {
+      setNotice("기획서가 200,000자를 넘습니다. 첫 버전에 필요한 범위만 남겨주세요.");
       return;
     }
 
     setBusy("analyze");
     setNotice(null);
     try {
-      const result = await postJson<Recommendation>("/api/analyze-plan", { role, extractedText: planText });
-      setRecommendation(result);
-      setSelectedTool(result.recommendedTool);
-      setSelectedServiceType(result.recommendedServiceType);
-      setStep("recommendation");
+      const result = await postJson<Recommendation>("/api/analyze-plan", {
+        role,
+        extractedText: planText,
+      });
+      applyNewRecommendation(result);
+      setShapeTab("brief");
+      setPhase("shape");
+      scrollToTop();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "추천 결과를 만들지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : "프로젝트 브리프를 만들지 못했습니다.");
     } finally {
       setBusy(null);
     }
@@ -338,57 +504,133 @@ export function VibeCraftApp() {
 
   async function requestInterviewQuestions() {
     if (!role) {
-      setNotice("먼저 역할을 선택해주세요.");
-      setStep("role");
+      setNotice("설명 방식을 맞추기 위해 먼저 역할을 선택해주세요.");
       return;
     }
     if (idea.trim().length < 4) {
-      setNotice("만들고 싶은 서비스를 한 문장 이상으로 입력해주세요.");
+      setNotice("만들고 싶은 서비스를 한 문장 이상으로 적어주세요.");
       return;
     }
 
     setBusy("idea-questions");
     setNotice(null);
     try {
-      const result = await postJson<{ nextQuestions: string[] }>("/api/idea-interview", { role, idea });
+      const result = await postJson<{ nextQuestions: string[] }>("/api/idea-interview", {
+        role,
+        idea,
+      });
       setInterviewQuestions(result.nextQuestions);
       setInterviewAnswers({});
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "질문을 만들지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : "확인 질문을 만들지 못했습니다.");
     } finally {
       setBusy(null);
     }
   }
 
   async function finishInterview() {
-    if (!role) {
-      setNotice("먼저 역할을 선택해주세요.");
-      setStep("role");
+    if (!role) return;
+    const unanswered = interviewQuestions.some(
+      (question) => !interviewAnswers[question]?.trim(),
+    );
+    if (unanswered) {
+      setNotice("프로젝트 범위를 정확히 잡을 수 있도록 모든 질문에 답해주세요.");
       return;
     }
 
     setBusy("idea-result");
     setNotice(null);
     try {
-      const result = await postJson<{ recommendation: Recommendation }>("/api/idea-interview", {
-        role,
-        idea,
-        answers: interviewAnswers,
-      });
-      setRecommendation(result.recommendation);
-      setSelectedTool(result.recommendation.recommendedTool);
-      setSelectedServiceType(result.recommendation.recommendedServiceType);
-      setStep("recommendation");
+      const result = await postJson<{ recommendation: Recommendation }>(
+        "/api/idea-interview",
+        {
+          role,
+          idea,
+          answers: interviewAnswers,
+        },
+      );
+      applyNewRecommendation(result.recommendation);
+      setInterviewQuestions([]);
+      setInterviewAnswers({});
+      setShapeTab("brief");
+      setPhase("shape");
+      scrollToTop();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "추천 결과를 만들지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : "프로젝트 브리프를 만들지 못했습니다.");
     } finally {
       setBusy(null);
     }
   }
 
+  function beginBriefEdit() {
+    if (!recommendation) return;
+    setBriefDraft({
+      summary: recommendation.summary,
+      targetUsers: recommendation.targetUsers.join("\n"),
+      mainFeatures: recommendation.mainFeatures.join("\n"),
+    });
+    setEditingBrief(true);
+  }
+
+  function saveBrief() {
+    if (!recommendation) return;
+    const nextUsers = linesFromText(briefDraft.targetUsers);
+    const nextFeatures = linesFromText(briefDraft.mainFeatures);
+    if (briefDraft.summary.trim().length < 4 || !nextUsers.length || !nextFeatures.length) {
+      setNotice("한 줄 설명, 핵심 사용자, 핵심 기능을 각각 하나 이상 입력해주세요.");
+      return;
+    }
+    setRecommendation({
+      ...recommendation,
+      summary: briefDraft.summary.trim(),
+      targetUsers: nextUsers,
+      mainFeatures: nextFeatures,
+    });
+    setEditingBrief(false);
+    setNotice("프로젝트 브리프를 저장했습니다.");
+  }
+
+  function setChecklist(item: ChecklistItem, status: ChecklistStatus) {
+    setChecklistStatuses((current) => {
+      const next = { ...current };
+      if (status === "active") {
+        checklistItems.forEach((candidate) => {
+          if (candidate.id !== item.id && next[candidate.id] === "active") {
+            next[candidate.id] = "pending";
+          }
+        });
+      }
+      next[item.id] = status;
+      return next;
+    });
+    void fetch("/api/checklist-progress", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, checklistId: item.id, status }),
+    });
+    if (status === "blocked") openBlockedItem(item);
+  }
+
+  function setDeployCheck(item: ChecklistItem, status: ChecklistStatus) {
+    setDeploymentStatuses((current) => ({ ...current, [item.id]: status }));
+    if (status === "blocked") openBlockedItem(item);
+  }
+
+  function openBlockedItem(item: ChecklistItem) {
+    setErrorMessage(
+      "현재 작업: " +
+        item.title +
+        "\n하려던 일: " +
+        item.description +
+        "\n\n실행한 명령어 또는 에러 메시지:\n",
+    );
+    setErrorSolution(null);
+    setResource("error");
+  }
+
   async function solveCurrentError() {
     if (errorMessage.trim().length < 1) {
-      setNotice("에러 메시지를 입력해주세요.");
+      setNotice("에러 메시지나 막힌 상황을 입력해주세요.");
       return;
     }
 
@@ -398,12 +640,12 @@ export function VibeCraftApp() {
       const result = await postJson<ErrorSolution>("/api/solve-error", {
         role: activeRole,
         selectedTool: activeTool,
-        currentStep: currentStep.label,
+        currentStep: phaseMetadata[safePhase].label,
         errorMessage,
       });
       setErrorSolution(result);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "에러를 분석하지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : "막힌 원인을 분석하지 못했습니다.");
     } finally {
       setBusy(null);
     }
@@ -411,15 +653,16 @@ export function VibeCraftApp() {
 
   async function sendChatMessage() {
     const message = chatInput.trim();
-    if (!message) return;
+    if (!message || busy === "chat") return;
 
     setChatInput("");
     setChatMessages((current) => [...current, { role: "user", content: message }]);
+    setBusy("chat");
     try {
       const result = await postJson<{ answer: string; relatedLinks: string[] }>("/api/chat", {
         role: activeRole,
         message,
-        currentPage: currentStep.label,
+        currentPage: phaseMetadata[safePhase].label,
         selectedTool: activeTool,
         selectedServiceType: activeServiceType,
         projectSummary: recommendation?.summary,
@@ -431,242 +674,664 @@ export function VibeCraftApp() {
     } catch {
       setChatMessages((current) => [
         ...current,
-        { role: "assistant", content: "답변을 만들지 못했습니다. 질문을 조금 더 짧게 나눠 다시 보내주세요." },
+        {
+          role: "assistant",
+          content: "답변을 만들지 못했습니다. 질문을 더 짧게 나눠 다시 보내주세요.",
+        },
       ]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function copyText(text: string, successMessage: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(successMessage);
+    } catch {
+      setNotice("복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해주세요.");
     }
   }
 
   function copyPrompt(template: string) {
     const filled = template
-      .replaceAll("{{projectSummary}}", recommendation?.summary ?? "내 프로젝트 설명을 여기에 붙여넣습니다.")
+      .replaceAll(
+        "{{projectSummary}}",
+        recommendation?.summary ?? "내 프로젝트 설명을 여기에 붙여넣습니다.",
+      )
       .replaceAll("{{errorMessage}}", errorMessage || "에러 메시지를 여기에 붙여넣습니다.");
-    void navigator.clipboard.writeText(filled);
-    setNotice("프롬프트를 복사했습니다.");
+    void copyText(filled, "현재 프로젝트 내용으로 프롬프트를 복사했습니다.");
   }
 
-  function renderStep() {
-    switch (step) {
-      case "role":
-        return (
-          <div className="grid gap-3 md:grid-cols-3">
-            {roleOptions.map((option) => {
-              const Icon = roleIcons[option.id];
-              const selected = role === option.id;
-              return (
-                <ChoiceCard
-                  description={option.description}
-                  icon={Icon}
-                  key={option.id}
-                  meta={option.example}
-                  onClick={() => {
-                    setRole(option.id);
-                    setStep("start");
-                  }}
-                  selected={selected}
-                  title={option.title}
-                />
-              );
-            })}
+  function followAssistantLink(label: string) {
+    const target = mapAssistantLinkLabel(label);
+    if (!target) return;
+    if ((phaseOrder as readonly string[]).includes(target)) {
+      closeResource();
+      navigatePhase(target as PhaseId);
+      return;
+    }
+    setResource(target as ResourceId);
+  }
+
+  function renderStartPhase() {
+    return (
+      <section className="grid gap-12 2xl:grid-cols-[minmax(0,1fr)_340px] 2xl:gap-20">
+        <div className="max-w-3xl">
+          <Eyebrow>새 프로젝트 · 01</Eyebrow>
+          <h1 className="mt-4 max-w-3xl text-4xl font-black leading-[1.1] tracking-[-0.035em] text-ink sm:text-5xl lg:text-6xl">
+            기획을 멈추지 말고,
+            <br />
+            실제 서비스로 만드세요.
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
+            VibeCraft는 많은 개발 지식을 한꺼번에 보여주지 않습니다. 지금 프로젝트에 필요한
+            다음 행동 하나를 정하고, 배포 링크가 생길 때까지 함께 갑니다.
+          </p>
+
+          {recommendation ? (
+            <div className="mt-8 flex flex-col gap-3 border-l-2 border-success bg-success/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold text-success">진행 중인 프로젝트</p>
+                <p className="mt-1 line-clamp-1 text-sm font-semibold text-ink">
+                  {recommendation.summary}
+                </p>
+              </div>
+              <SecondaryButton
+                className="shrink-0"
+                icon={ArrowRight}
+                onClick={() => navigatePhase("shape")}
+              >
+                계속 만들기
+              </SecondaryButton>
+            </div>
+          ) : null}
+
+          <div className="mt-10 border-t border-line pt-7">
+            <p className="text-sm font-bold text-ink">누구의 상황에 맞춰 설명할까요?</p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              역할은 추천의 말투와 예시를 바꿉니다. 언제든 다시 선택할 수 있습니다.
+            </p>
+            <RoleSelector role={role} onChange={handleRoleChange} />
           </div>
-        );
 
-      case "start":
-        return (
-          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-            <WorkSurface
-              action={
-                <PrimaryButton disabled={busy === "analyze"} icon={FileText} onClick={analyzePlan}>
-                  {busy === "analyze" ? "분석 중" : "기획서 분석"}
-                </PrimaryButton>
-              }
-              icon={Upload}
-              title="PlanCraft 기획서"
-            >
-              <label className="group flex min-h-32 cursor-pointer flex-col justify-between rounded-lg border border-dashed border-line bg-canvas p-4 transition hover:border-teal hover:bg-teal/5">
-                <span className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-md bg-teal text-white">
-                    <Upload className="h-5 w-5" />
+          <div className="mt-10">
+            <StartModePicker mode={startMode} onChange={setStartMode} />
+            {startMode === "plan" ? (
+              <div className="mt-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold text-ink">기획서 내용</span>
+                  <span className="mb-3 block text-xs leading-5 text-muted">
+                    txt·md는 바로 읽습니다. PDF는 파일명만 불러오므로 핵심 요약을 함께
+                    붙여넣어주세요.
                   </span>
-                  <span>
-                    <span className="block text-sm font-semibold">txt, md, pdf 선택</span>
-                    <span className="mt-1 block text-xs text-muted">PDF는 요약문을 함께 붙여넣으면 더 정확합니다.</span>
-                  </span>
-                </span>
-                <input
-                  accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
-                  className="sr-only"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void handleFileUpload(file);
-                  }}
-                  type="file"
-                />
-                {uploadedFileName ? <span className="mt-3 text-xs font-medium text-teal">{uploadedFileName}</span> : null}
-              </label>
-              <textarea
-                className="field min-h-56"
-                onChange={(event) => setPlanText(event.target.value)}
-                placeholder="기획서 핵심 내용을 붙여넣으세요. 사용자, 핵심 기능, 데이터 저장 여부가 들어가면 추천이 좋아집니다."
-                value={planText}
-              />
-            </WorkSurface>
-
-            <WorkSurface
-              action={
-                <SecondaryButton disabled={busy === "idea-questions"} icon={MessageSquare} onClick={requestInterviewQuestions}>
-                  {busy === "idea-questions" ? "질문 생성 중" : "질문 받기"}
-                </SecondaryButton>
-              }
-              icon={MessageSquare}
-              title="아이디어 인터뷰"
-            >
-              <textarea
-                className="field min-h-28"
-                onChange={(event) => setIdea(event.target.value)}
-                placeholder="예: 동아리 모집 신청을 받고 선생님이 확인하는 모바일 웹앱을 만들고 싶어요."
-                value={idea}
-              />
-              {interviewQuestions.length ? (
-                <div className="space-y-3">
-                  {interviewQuestions.map((question, index) => (
-                    <label className="block" key={question}>
-                      <span className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                        <span className="grid h-6 w-6 place-items-center rounded-md bg-blue/10 text-xs text-blue">{index + 1}</span>
-                        {question}
+                  <span className="mb-3 flex min-h-28 cursor-pointer flex-col items-start justify-between gap-4 border border-dashed border-line bg-surface px-4 py-4 transition-colors hover:border-signal hover:bg-signal-soft focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-signal sm:flex-row sm:items-center">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid h-10 w-10 place-items-center bg-ink text-surface">
+                        <Upload className="h-4 w-4" />
                       </span>
-                      <input
-                        className="field h-11"
-                        onChange={(event) =>
-                          setInterviewAnswers((current) => ({ ...current, [question]: event.target.value }))
-                        }
-                        value={interviewAnswers[question] ?? ""}
-                      />
-                    </label>
-                  ))}
-                  <PrimaryButton disabled={busy === "idea-result"} icon={LayoutDashboard} onClick={finishInterview}>
-                    {busy === "idea-result" ? "추천 생성 중" : "답변으로 로드맵 생성"}
+                      <span>
+                        <span className="block text-sm font-bold text-ink">
+                          파일을 선택하거나 내용을 붙여넣으세요
+                        </span>
+                        <span className="mt-1 block text-xs text-muted">
+                          최대 1MB · txt, md, pdf
+                        </span>
+                      </span>
+                    </span>
+                    {uploadedFileName ? (
+                      <span className="max-w-full truncate font-mono text-[10px] text-signal-ink sm:max-w-36">
+                        {uploadedFileName}
+                      </span>
+                    ) : null}
+                    <input
+                      accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void handleFileUpload(file);
+                      }}
+                      type="file"
+                    />
+                  </span>
+                </label>
+                <label className="block">
+                  <span className="sr-only">기획서 핵심 내용</span>
+                  <textarea
+                    className="field min-h-64 resize-y"
+                    onChange={(event) => setPlanText(event.target.value)}
+                    placeholder="누가 사용하는지, 무엇을 해결하는지, 꼭 필요한 기능은 무엇인지 적어주세요."
+                    value={planText}
+                  />
+                </label>
+                <PrimaryButton
+                  className="mt-4 w-full sm:w-auto"
+                  disabled={busy === "analyze"}
+                  icon={FileText}
+                  loading={busy === "analyze"}
+                  onClick={analyzePlan}
+                >
+                  프로젝트 브리프 만들기
+                </PrimaryButton>
+              </div>
+            ) : (
+              <div className="mt-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold text-ink">
+                    어떤 서비스를 만들고 싶나요?
+                  </span>
+                  <textarea
+                    className="field min-h-36 resize-y"
+                    onChange={(event) => handleIdeaChange(event.target.value)}
+                    placeholder="예: 동아리 모집 신청을 받고 선생님이 확인하는 모바일 웹앱"
+                    value={idea}
+                  />
+                </label>
+                {!interviewQuestions.length ? (
+                  <PrimaryButton
+                    className="mt-4 w-full sm:w-auto"
+                    disabled={busy === "idea-questions"}
+                    icon={MessageSquare}
+                    loading={busy === "idea-questions"}
+                    onClick={requestInterviewQuestions}
+                  >
+                    필요한 질문 받기
                   </PrimaryButton>
-                </div>
-              ) : (
-                <InsightStrip
-                  icon={Sparkles}
-                  text="질문을 받으면 서비스 목적, 사용자, 저장 기능, 모바일 중요도를 짧게 확인합니다."
-                />
-              )}
-            </WorkSurface>
+                ) : (
+                  <div className="mt-8 space-y-6 border-t border-line pt-6">
+                    <div>
+                      <p className="text-sm font-bold text-ink">프로젝트 범위를 확인합니다.</p>
+                      <p className="mt-1 text-xs text-muted">
+                        기술 용어보다 실제 사용 상황을 기준으로 답해주세요.
+                      </p>
+                    </div>
+                    {interviewQuestions.map((question, index) => (
+                      <label className="block" key={question}>
+                        <span className="mb-2 flex gap-3 text-sm font-bold leading-6 text-ink">
+                          <span className="font-mono text-xs text-signal-ink">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          {question}
+                        </span>
+                        <input
+                          className="field"
+                          onChange={(event) =>
+                            setInterviewAnswers((current) => ({
+                              ...current,
+                              [question]: event.target.value,
+                            }))
+                          }
+                          value={interviewAnswers[question] ?? ""}
+                        />
+                      </label>
+                    ))}
+                    <PrimaryButton
+                      className="w-full sm:w-auto"
+                      disabled={busy === "idea-result"}
+                      icon={ArrowRight}
+                      loading={busy === "idea-result"}
+                      onClick={finishInterview}
+                    >
+                      답변으로 브리프 만들기
+                    </PrimaryButton>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        );
+        </div>
+        <JourneySketch />
+      </section>
+    );
+  }
 
-      case "recommendation":
-        if (!recommendation) {
-          return (
-            <EmptyState
-              actionLabel="입력 단계로 이동"
-              description="기획서나 아이디어를 입력하면 추천 도구, 서비스 유형, 구현 순서가 생성됩니다."
-              icon={FileText}
-              onAction={() => setStep("start")}
-              title="아직 로드맵이 없습니다"
+  function renderShapePhase() {
+    if (!recommendation) {
+      return (
+        <ProjectEmptyState
+          description="프로젝트를 설계하려면 먼저 기획서나 아이디어를 분석해야 합니다."
+          onAction={() => navigatePhase("start")}
+        />
+      );
+    }
+
+    return (
+      <section>
+        <Eyebrow>프로젝트 설계 · 02</Eyebrow>
+        <h1 className="mt-4 max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+          만들 수 있는 크기로
+          <br />
+          프로젝트를 다듬습니다.
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-muted">
+          추천은 정답이 아니라 출발점입니다. 프로젝트의 목적을 먼저 확인하고 도구와 구현
+          형태를 직접 결정하세요.
+        </p>
+
+        <ShapeTabs activeTab={shapeTab} onChange={setShapeTab} />
+
+        {shapeTab === "brief" ? (
+          <div className="mt-8">
+            <SectionHeading
+              action={
+                editingBrief ? (
+                  <div className="flex gap-2">
+                    <SecondaryButton onClick={() => setEditingBrief(false)}>취소</SecondaryButton>
+                    <PrimaryButton icon={Save} onClick={saveBrief}>
+                      저장
+                    </PrimaryButton>
+                  </div>
+                ) : (
+                  <SecondaryButton icon={Pencil} onClick={beginBriefEdit}>
+                    브리프 수정
+                  </SecondaryButton>
+                )
+              }
+              description="AI 추천보다 먼저 확인해야 할 프로젝트의 기준입니다."
+              title="프로젝트 브리프"
             />
-          );
-        }
-        return (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-line bg-ink p-5 text-white">
-              <p className="text-xs font-semibold uppercase text-lemon">Project Brief</p>
-              <h3 className="mt-3 text-2xl font-bold leading-9">{recommendation.summary}</h3>
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <StatusTile icon={toolIcons[activeTool]} label="추천 도구" value={selectedToolInfo.name} />
-                <StatusTile icon={serviceIcons[activeServiceType]} label="추천 유형" value={selectedServiceInfo.title} />
-                <StatusTile icon={ShieldCheck} label="예상 난이도" value={recommendation.difficulty} />
-              </div>
-            </div>
-            <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-              <WorkSurface icon={CheckCircle2} title="추천 이유">
-                <BulletList items={recommendation.reasons} />
-              </WorkSurface>
-              <WorkSurface icon={ListChecks} title="구현 순서">
-                <NumberList items={recommendation.roadmap} />
-              </WorkSurface>
-            </div>
-            <WorkSurface icon={Database} title="기술 조합">
-              <TokenGrid items={recommendation.recommendedStack} />
-            </WorkSurface>
-          </div>
-        );
 
-      case "concept":
-        return (
-          <div className="grid gap-3 md:grid-cols-2">
-            {conceptCards.map((card, index) => (
-              <FeatureTile
-                accent={index % 2 === 0 ? "teal" : "blue"}
-                description={card.body}
-                icon={index % 2 === 0 ? BookOpen : Sparkles}
-                key={card.title}
-                title={card.title}
+            {editingBrief ? (
+              <div className="mt-7 grid gap-7">
+                <label>
+                  <span className="mb-2 block text-sm font-bold text-ink">한 줄 설명</span>
+                  <textarea
+                    className="field min-h-28"
+                    onChange={(event) =>
+                      setBriefDraft((current) => ({ ...current, summary: event.target.value }))
+                    }
+                    value={briefDraft.summary}
+                  />
+                </label>
+                <div className="grid gap-7 md:grid-cols-2">
+                  <label>
+                    <span className="mb-2 block text-sm font-bold text-ink">
+                      핵심 사용자 · 한 줄에 하나
+                    </span>
+                    <textarea
+                      className="field min-h-44"
+                      onChange={(event) =>
+                        setBriefDraft((current) => ({
+                          ...current,
+                          targetUsers: event.target.value,
+                        }))
+                      }
+                      value={briefDraft.targetUsers}
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-2 block text-sm font-bold text-ink">
+                      핵심 기능 · 한 줄에 하나
+                    </span>
+                    <textarea
+                      className="field min-h-44"
+                      onChange={(event) =>
+                        setBriefDraft((current) => ({
+                          ...current,
+                          mainFeatures: event.target.value,
+                        }))
+                      }
+                      value={briefDraft.mainFeatures}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-8 grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div>
+                  <blockquote className="max-w-3xl text-2xl font-extrabold leading-10 tracking-[-0.035em] text-ink sm:text-3xl sm:leading-[1.45]">
+                    “{recommendation.summary}”
+                  </blockquote>
+                  <div className="mt-10 grid gap-8 md:grid-cols-2">
+                    <BriefList
+                      eyebrow="누구를 위해"
+                      items={recommendation.targetUsers}
+                      title="핵심 사용자"
+                    />
+                    <BriefList
+                      eyebrow="무엇을 먼저"
+                      items={recommendation.mainFeatures}
+                      ordered
+                      title="MVP 핵심 기능"
+                    />
+                  </div>
+                </div>
+                <aside className="border-l border-line pl-6">
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    현재 결정
+                  </p>
+                  <dl className="mt-5 space-y-5">
+                    <MetaRow label="난이도" value={recommendation.difficulty} />
+                    <MetaRow
+                      label="제작 도구"
+                      value={selectedTool ? selectedToolInfo.name : "미확정 · 추천 " + recommendedToolInfo.name}
+                    />
+                    <MetaRow
+                      label="서비스 형태"
+                      value={
+                        selectedServiceType
+                          ? selectedServiceInfo.title
+                          : "미확정 · 추천 " + recommendedServiceInfo.title
+                      }
+                    />
+                  </dl>
+                  <button
+                    className="mt-7 flex items-center gap-2 text-sm font-bold text-signal-ink hover:underline"
+                    onClick={() => setResource("concept")}
+                    type="button"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    시작 전 핵심 원칙
+                  </button>
+                </aside>
+              </div>
+            )}
+
+            <div className="mt-14">
+              <SectionHeading
+                description="순서가 막막할 때 돌아올 수 있는 프로젝트의 큰 경로입니다."
+                title="구현 경로"
               />
-            ))}
-          </div>
-        );
-
-      case "tools":
-        return (
-          <div className="space-y-4">
-            <div className="grid gap-3 xl:grid-cols-3">
-              {tools.map((tool) => (
-                <ChoiceCard
-                  description={tool.tagline}
-                  icon={toolIcons[tool.slug]}
-                  key={tool.slug}
-                  meta={tool.bestFor}
-                  onClick={() => setSelectedTool(tool.slug)}
-                  selected={activeTool === tool.slug}
-                  title={tool.name}
-                />
-              ))}
-            </div>
-            <WorkSurface icon={toolIcons[activeTool]} title={`${selectedToolInfo.name} 실행 가이드`}>
-              <div className="grid gap-3 md:grid-cols-2">
-                {selectedToolInfo.guide.map((section) => (
-                  <StepNote items={section.items} key={section.title} title={section.title} />
+              <ol className="mt-2">
+                {displayedRoadmap.map((item, index) => (
+                  <li
+                    className="grid grid-cols-[48px_minmax(0,1fr)] border-b border-line py-5"
+                    key={item}
+                  >
+                    <span className="font-mono text-xs font-semibold text-signal-ink">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-sm font-semibold leading-6 text-ink">{item}</span>
+                  </li>
                 ))}
+              </ol>
+            </div>
+          </div>
+        ) : null}
+
+        {shapeTab === "tool" ? (
+          <div className="mt-8">
+            <SectionHeading
+              description="화려한 결과보다 현재 프로젝트를 끝까지 다루기 좋은 도구를 고릅니다."
+              title="빌드 파트너 선택"
+            />
+            <div className="mt-6 border-l-2 border-signal bg-signal-soft px-4 py-3">
+              <p className="text-xs font-bold text-signal-ink">
+                추천 · {recommendedToolInfo.name}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[1]}</p>
+            </div>
+            <div className="mt-4 border-b border-line">
+              {tools.map((tool, index) => {
+                const selected = selectedTool === tool.slug;
+                const recommended = recommendation.recommendedTool === tool.slug;
+                const Icon = toolIcons[tool.slug];
+                return (
+                  <div
+                    className={
+                      "border-t border-line transition-colors " +
+                      (selected ? "bg-ink text-surface" : "bg-transparent text-ink")
+                    }
+                    key={tool.slug}
+                  >
+                    <button
+                      aria-pressed={selected}
+                      className="grid w-full gap-4 px-4 py-6 text-left sm:grid-cols-[56px_48px_minmax(0,1fr)_auto] sm:items-center"
+                      onClick={() => {
+                        setSelectedTool(tool.slug);
+                        setNotice(null);
+                      }}
+                      type="button"
+                    >
+                      <span
+                        className={
+                          "font-mono text-xs font-semibold " +
+                          (selected ? "text-signal" : "text-muted")
+                        }
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span
+                        className={
+                          "grid h-10 w-10 place-items-center border " +
+                          (selected
+                            ? "border-surface/20 bg-surface/10 text-signal"
+                            : "border-line bg-surface text-muted")
+                        }
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span>
+                        <span className="block text-xl font-extrabold tracking-[-0.03em]">
+                          {tool.name}
+                        </span>
+                        <span
+                          className={
+                            "mt-1 block text-sm leading-6 " +
+                            (selected ? "text-surface/65" : "text-muted")
+                          }
+                        >
+                          {tool.tagline}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-2 text-xs font-bold">
+                        {selected ? "선택됨" : recommended ? "추천 · 선택" : "선택"}
+                        <ChevronRight className="h-4 w-4" />
+                      </span>
+                    </button>
+                    {selected ? (
+                      <div className="grid gap-8 border-t border-surface/15 px-4 py-7 sm:ml-[104px] md:grid-cols-2">
+                        <div>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-signal">
+                            잘 맞는 이유
+                          </p>
+                          <p className="mt-3 text-sm font-semibold leading-6">{tool.bestFor}</p>
+                          <ul className="mt-4 space-y-2 text-sm leading-6 text-surface/70">
+                            {tool.strengths.map((item) => (
+                              <li className="flex gap-2" key={item}>
+                                <Check className="mt-1 h-4 w-4 shrink-0 text-signal" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-signal">
+                            먼저 알아둘 점
+                          </p>
+                          <ul className="mt-3 space-y-3 text-sm leading-6 text-surface/70">
+                            {tool.cautions.map((item) => (
+                              <li className="flex gap-2" key={item}>
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-signal" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {shapeTab === "service" ? (
+          <div className="mt-8">
+            <SectionHeading
+              description="사용 환경을 기준으로 결과물의 형태와 필요한 화면을 결정합니다."
+              title="서비스 형태 선택"
+            />
+            <div className="mt-6 border-l-2 border-signal bg-signal-soft px-4 py-3">
+              <p className="text-xs font-bold text-signal-ink">
+                추천 · {recommendedServiceInfo.title}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[0]}</p>
+            </div>
+            <div className="mt-6 grid gap-px overflow-hidden border border-line bg-line lg:grid-cols-3">
+              {serviceTypes.map((service, index) => {
+                const selected = selectedServiceType === service.id;
+                const recommended = recommendation.recommendedServiceType === service.id;
+                const Icon = serviceIcons[service.id];
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={
+                      "min-h-64 p-6 text-left transition-colors " +
+                      (selected
+                        ? "bg-signal text-ink"
+                        : "bg-surface text-ink hover:bg-signal-soft")
+                    }
+                    key={service.id}
+                    onClick={() => selectServiceType(service.id)}
+                    type="button"
+                  >
+                    <span className="flex items-start justify-between">
+                      <span className="font-mono text-xs font-semibold">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {selected ? (
+                        <span className="grid h-7 w-7 place-items-center bg-ink text-surface">
+                          <Check className="h-4 w-4" />
+                        </span>
+                      ) : recommended ? (
+                        <span className="font-mono text-[10px] font-bold text-signal-ink">추천</span>
+                      ) : (
+                        <Icon className="h-5 w-5 text-muted" />
+                      )}
+                    </span>
+                    <span className="mt-14 block text-2xl font-black tracking-[-0.03em]">
+                      {service.title}
+                    </span>
+                    <span
+                      className={
+                        "mt-3 block text-sm leading-6 " +
+                        (selected ? "text-ink/70" : "text-muted")
+                      }
+                    >
+                      {service.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-ink">
+                  기술이 연결되는 순서
+                </p>
+                <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                  {displayedStack.map((item, index) => (
+                    <div className="contents" key={item}>
+                      <span className="border border-line bg-surface px-3 py-3 text-center text-xs font-bold text-ink">
+                        {item}
+                      </span>
+                      {index < displayedStack.length - 1 ? (
+                        <ArrowRight className="mx-auto h-4 w-4 rotate-90 text-signal-ink sm:rotate-0" />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </WorkSurface>
-          </div>
-        );
-
-      case "service":
-        return (
-          <div className="space-y-4">
-            <div className="grid gap-3 lg:grid-cols-3">
-              {serviceTypes.map((service) => (
-                <ChoiceCard
-                  description={service.description}
-                  icon={serviceIcons[service.id]}
-                  key={service.id}
-                  meta={service.stack.join(" · ")}
-                  onClick={() => setSelectedServiceType(service.id)}
-                  selected={activeServiceType === service.id}
-                  title={service.title}
-                />
-              ))}
-            </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              <WorkSurface icon={Database} title="추천 기술 조합">
-                <TokenGrid items={selectedServiceInfo.stack} />
-              </WorkSurface>
-              <WorkSurface icon={LayoutDashboard} title="필요한 화면">
-                <BulletList items={selectedServiceInfo.screens} />
-              </WorkSurface>
+              <div className="border-l border-line pl-6">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  필요한 화면
+                </p>
+                <ul className="mt-4 space-y-3">
+                  {selectedServiceInfo.screens.map((screen) => (
+                    <li className="flex gap-3 text-sm font-semibold text-ink" key={screen}>
+                      <span className="mt-2 h-1.5 w-1.5 bg-signal" />
+                      {screen}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-        );
+        ) : null}
 
-      case "checklist":
-        return (
-          <div className="space-y-3">
-            {checklistItems.map((item) => (
-              <ChecklistRow
+        <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
+          <p className="max-w-xl text-sm leading-6 text-muted">
+            브리프와 제작 방식을 확인했다면 첫 번째 실제 작업을 시작하세요. 이후 선택은 언제든
+            이 화면에서 바꿀 수 있습니다.
+          </p>
+          <PrimaryButton icon={Play} onClick={startBuild}>
+            제작 시작하기
+          </PrimaryButton>
+        </div>
+      </section>
+    );
+  }
+
+  function renderBuildPhase() {
+    if (!recommendation) {
+      return (
+        <ProjectEmptyState
+          description="먼저 프로젝트 브리프를 만들면 현재 프로젝트에 맞는 작업 목록이 준비됩니다."
+          onAction={() => navigatePhase("start")}
+        />
+      );
+    }
+
+    const doneCount = checklistItems.filter(
+      (item) => checklistStatuses[item.id] === "done",
+    ).length;
+
+    return (
+      <section>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <Eyebrow>실제 제작 · 03</Eyebrow>
+            <h1 className="mt-4 max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+              오늘 필요한 한 단계에만
+              <br />
+              집중하세요.
+            </h1>
+          </div>
+          <div className="w-full max-w-xs">
+            <ProgressBar
+              label={"완료한 작업 " + doneCount + "/" + checklistItems.length}
+              value={projectProgress.phases.build.percent}
+            />
+          </div>
+        </div>
+
+        <div className="mt-10">
+          {currentMission ? (
+            <MissionCard
+              item={currentMission}
+              onBlocked={() => setChecklist(currentMission, "blocked")}
+              onComplete={() => setChecklist(currentMission, "done")}
+              onStart={() => setChecklist(currentMission, "active")}
+              status={checklistStatuses[currentMission.id] ?? "pending"}
+            />
+          ) : (
+            <div className="border-y border-success bg-success/10 px-5 py-8 sm:px-8">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+              <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
+                제작 체크리스트를 모두 완료했습니다.
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-muted">
+                이제 실제 공개 전에 비밀 정보, 핵심 사용자 흐름, 공유 주소를 마지막으로 점검하세요.
+              </p>
+              <PrimaryButton className="mt-6" icon={Rocket} onClick={() => navigatePhase("ship")}>
+                공개 준비하기
+              </PrimaryButton>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-14">
+          <SectionHeading
+            description="진행 중인 작업은 하나만 두는 것이 좋습니다. 막히면 해당 문맥이 해결 도우미로 자동 전달됩니다."
+            title="전체 작업"
+          />
+          <div className="mt-2">
+            {checklistItems.map((item, index) => (
+              <TaskRow
+                index={index}
                 item={item}
                 key={item.id}
                 onChange={(status) => setChecklist(item, status)}
@@ -674,723 +1339,523 @@ export function VibeCraftApp() {
               />
             ))}
           </div>
-        );
+        </div>
 
-      case "terms":
-        return (
-          <div className="space-y-4">
-            <SearchBox onChange={setTermSearch} placeholder="터미널, Vercel, 환경변수 검색" value={termSearch} />
-            <div className="grid gap-3 lg:grid-cols-2">
-              {filteredTerms.map((term) => (
-                <TermTile key={term.term} role={activeRole} term={term} />
-              ))}
-            </div>
-          </div>
-        );
-
-      case "prompts":
-        return (
-          <div className="space-y-4">
-            <SearchBox onChange={setPromptSearch} placeholder="배포, 에러, 모바일 검색" value={promptSearch} />
-            <div className="grid gap-3 lg:grid-cols-2">
-              {filteredPrompts.map((prompt) => (
-                <PromptTile key={prompt.id} onCopy={() => copyPrompt(prompt.template)} prompt={prompt} />
-              ))}
-            </div>
-          </div>
-        );
-
-      case "error":
-        return (
-          <div className="space-y-4">
-            <WorkSurface
-              action={
-                <PrimaryButton disabled={busy === "error"} icon={Wrench} onClick={solveCurrentError}>
-                  {busy === "error" ? "분석 중" : "해결 순서 보기"}
-                </PrimaryButton>
-              }
-              icon={AlertTriangle}
-              title="에러 메시지"
-            >
-              <textarea
-                className="field min-h-48"
-                onChange={(event) => setErrorMessage(event.target.value)}
-                placeholder="터미널, Vercel, 브라우저 콘솔의 에러 메시지를 붙여넣으세요. 비밀키와 DB 주소는 제거하세요."
-                value={errorMessage}
-              />
-            </WorkSurface>
-            {errorSolution ? (
-              <div className="grid gap-4 xl:grid-cols-2">
-                <WorkSurface icon={AlertTriangle} title={errorSolution.summary}>
-                  <h4 className="text-sm font-semibold">가능한 원인</h4>
-                  <BulletList items={errorSolution.possibleCauses} />
-                  <h4 className="mt-5 text-sm font-semibold">해결 순서</h4>
-                  <NumberList items={errorSolution.solutionSteps} />
-                </WorkSurface>
-                <WorkSurface icon={ClipboardList} title="AI에게 다시 물어볼 프롬프트">
-                  <CodeBlock text={errorSolution.suggestedPrompt.replaceAll("{{errorMessage}}", errorMessage)} />
-                  <TokenGrid items={errorSolution.relatedTerms} />
-                </WorkSurface>
-              </div>
-            ) : null}
-          </div>
-        );
-
-      case "deploy":
-        return (
-          <div className="space-y-3">
-            {deploymentChecks.map((item) => (
-              <ChecklistRow
-                item={item}
-                key={item.id}
-                onChange={(status) => setDeployCheck(item, status)}
-                status={deploymentStatuses[item.id] ?? "pending"}
-              />
-            ))}
-          </div>
-        );
-    }
+        <div className="mt-10 flex flex-wrap gap-3 border-t border-line pt-6">
+          <SecondaryButton icon={ClipboardList} onClick={() => setResource("prompts")}>
+            작업 프롬프트 열기
+          </SecondaryButton>
+          <SecondaryButton icon={BookOpen} onClick={() => setResource("terms")}>
+            용어 찾아보기
+          </SecondaryButton>
+          <SecondaryButton icon={Wrench} onClick={() => setResource("error")}>
+            막힌 내용 해결하기
+          </SecondaryButton>
+        </div>
+      </section>
+    );
   }
 
-  return (
-    <div className="min-h-screen pb-24 lg:pb-0">
-      <div className="mx-auto grid min-h-screen max-w-[1580px] gap-4 px-3 py-3 md:px-5 lg:grid-cols-[260px_minmax(0,1fr)_360px]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-3 space-y-3">
-            <BrandPanel progress={progress} />
-            <nav className="rounded-lg border border-line bg-surface p-2 shadow-soft">
-              {steps.map((item, index) => (
-                <StepButton
-                  active={item.id === step}
-                  done={index < currentIndex}
-                  icon={item.icon}
+  function renderShipPhase() {
+    if (!recommendation) {
+      return (
+        <ProjectEmptyState
+          description="프로젝트 브리프와 제작 작업이 있어야 공개 준비도를 계산할 수 있습니다."
+          onAction={() => navigatePhase("start")}
+        />
+      );
+    }
+
+    const deployDone = deploymentItems.filter(
+      (item) => deploymentStatuses[item.id] === "done",
+    ).length;
+    const ready =
+      projectProgress.phases.build.percent === 100 &&
+      projectProgress.phases.ship.percent === 100;
+    const remainingRisks =
+      checklistItems.filter((item) => checklistStatuses[item.id] !== "done").length +
+      deploymentItems.filter((item) => deploymentStatuses[item.id] !== "done").length +
+      Number(!verifiedDeploymentUrl || !deploymentUrlConfirmed);
+
+    return (
+      <section>
+        <Eyebrow>세상에 공개 · 04</Eyebrow>
+        <div className="mt-4 grid gap-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-end">
+          <div>
+            <h1 className="max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+              링크를 공유할 수 있을 때
+              <br />
+              프로젝트는 비로소 완성됩니다.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-muted">
+              체크박스를 여는 것만으로 진행률이 오르지 않습니다. 실제 점검 완료와 배포 URL이
+              있어야 공개 단계가 끝납니다.
+            </p>
+          </div>
+          <div className="border-l-2 border-signal pl-5">
+            <p className="font-mono text-5xl font-black tracking-[-0.06em] text-ink">
+              {projectProgress.phases.ship.percent}%
+            </p>
+            <p className="mt-2 text-xs font-bold text-muted">
+              공개 준비 · {remainingRisks}개 확인 필요
+            </p>
+          </div>
+        </div>
+
+        {ready ? (
+          <div className="mt-10 border-y border-success bg-success/10 px-5 py-8 sm:px-8 sm:py-10">
+            <Flag className="h-8 w-8 text-success" />
+            <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
+              서비스가 세상에 나왔습니다.
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+              {recommendation.summary}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <a
+                className="action-button action-button--primary"
+                href={verifiedDeploymentUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <ExternalLink className="h-4 w-4" />
+                공개 결과 열기
+              </a>
+              <SecondaryButton
+                icon={Copy}
+                onClick={() =>
+                  void copyText(
+                    recommendation.summary + "\n" + verifiedDeploymentUrl,
+                    "프로젝트 소개와 배포 URL을 복사했습니다.",
+                  )
+                }
+              >
+                공유 문구 복사
+              </SecondaryButton>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-12 grid gap-12 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div>
+            <SectionHeading
+              description={"완료한 점검 " + deployDone + "/" + deploymentItems.length}
+              title="공개 전 최종 점검"
+            />
+            <div className="mt-2">
+              {deploymentItems.map((item, index) => (
+                <TaskRow
+                  index={index}
+                  item={item}
                   key={item.id}
-                  label={item.label}
-                  onClick={() => setStep(item.id)}
-                  stepNumber={index + 1}
+                  onChange={(status) => setDeployCheck(item, status)}
+                  status={deploymentStatuses[item.id] ?? "pending"}
                 />
               ))}
-            </nav>
-          </div>
-        </aside>
-
-        <main className="min-w-0">
-          <MobileTopBar
-            currentStep={currentStep.short}
-            onChat={() => setChatOpen(true)}
-            progress={progress}
-            title="VibeCraft"
-          />
-          <div className="mb-3 rounded-lg border border-line bg-surface p-4 shadow-soft md:p-5">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <StepBadge icon={currentStep.icon} label={`${currentIndex + 1}/${steps.length} ${currentStep.label}`} />
-                  {role ? <MiniPill label={roleOptions.find((item) => item.id === role)?.title ?? "역할"} /> : null}
-                  <MiniPill label={selectedToolInfo.name} />
-                  <MiniPill label={selectedServiceInfo.title} />
-                </div>
-                <h1 className="text-2xl font-bold leading-tight tracking-normal text-ink md:text-4xl">{currentIntro.title}</h1>
-                <p className="mt-3 text-sm leading-6 text-muted md:text-base">{currentIntro.description}</p>
-              </div>
-              <div className="rounded-lg border border-line bg-canvas p-3 text-sm leading-6 text-muted xl:w-72">
-                <p className="font-semibold text-ink">현재 행동</p>
-                <p className="mt-1">{currentIntro.action}</p>
-              </div>
             </div>
           </div>
+          <aside className="xl:border-l xl:border-line xl:pl-7">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-ink">
+              최종 산출물
+            </p>
+            <h2 className="mt-3 text-2xl font-black tracking-[-0.035em] text-ink">
+              {activeServiceType === "software" ? "공유 URL 기록" : "배포 URL 기록"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-muted">
+              {activeServiceType === "software"
+                ? "저장소나 다운로드 페이지의 실제 주소를 넣고 직접 열리는지 확인하세요."
+                : "Vercel 등에서 발급된 실제 주소를 넣고 직접 열리는지 확인하세요."}
+            </p>
+            <label className="mt-6 block">
+              <span className="mb-2 block text-xs font-bold text-ink">공유 주소</span>
+              <input
+                className="field"
+                aria-invalid={Boolean(deploymentUrl && !verifiedDeploymentUrl)}
+                inputMode="url"
+                onChange={(event) => {
+                  setDeploymentUrl(event.target.value);
+                  setDeploymentUrlConfirmed(false);
+                }}
+                placeholder="https://my-project.vercel.app"
+                type="url"
+                value={deploymentUrl}
+              />
+            </label>
+            {deploymentUrl ? (
+              verifiedDeploymentUrl ? (
+                <a
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-signal-ink hover:underline"
+                  href={verifiedDeploymentUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  새 탭에서 주소 확인하기
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              ) : (
+                <p className="mt-3 text-xs font-semibold text-danger">
+                  localhost가 아닌 https:// 전체 주소를 입력해주세요.
+                </p>
+              )
+            ) : null}
 
-          {notice ? (
-            <div className="mb-3 flex items-start gap-3 rounded-lg border border-lemon/50 bg-lemon/15 p-3 text-sm leading-6 text-ink">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />
-              <p>{notice}</p>
+            {verifiedDeploymentUrl ? (
+              <label className="mt-5 flex cursor-pointer items-start gap-3 border border-line bg-surface p-3 text-sm leading-6 text-ink">
+                <input
+                  checked={deploymentUrlConfirmed}
+                  className="mt-1 h-4 w-4 accent-[rgb(var(--color-signal))]"
+                  onChange={(event) => setDeploymentUrlConfirmed(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>새 탭에서 주소가 실제로 열리고 핵심 화면이 보이는 것을 확인했습니다.</span>
+              </label>
+            ) : null}
+
+            <div className="mt-8 border-t border-line pt-6">
+              <p className="text-xs font-bold text-muted">프로젝트 전체 진행률</p>
+              <div className="mt-3">
+                <ProgressBar value={projectProgress.percent} />
+              </div>
             </div>
-          ) : null}
+          </aside>
+        </div>
+      </section>
+    );
+  }
 
-          <section className="rounded-lg border border-line bg-surface p-3 shadow-soft md:p-5">{renderStep()}</section>
-        </main>
+  function renderResource() {
+    if (!resource) return null;
 
-        <aside className="hidden lg:block">
-          <ChatPanel
-            chatInput={chatInput}
-            messages={chatMessages}
-            onChangeInput={setChatInput}
-            onSend={sendChatMessage}
-            projectSummary={recommendation?.summary}
-            selectedService={selectedServiceInfo.title}
-            selectedTool={selectedToolInfo.name}
-            stepLabel={currentStep.label}
-          />
-        </aside>
-      </div>
-
-      <MobileBottomBar
-        canGoBack={currentIndex > 0}
-        canGoNext={currentIndex < steps.length - 1}
-        currentLabel={currentStep.short}
-        onBack={() => go(-1)}
-        onChat={() => setChatOpen(true)}
-        onNext={() => go(1)}
-      />
-
-      {chatOpen ? (
-        <div className="fixed inset-0 z-50 bg-ink/45 p-3 lg:hidden">
-          <div className="ml-auto flex h-full max-w-md flex-col rounded-lg border border-line bg-surface shadow-strong">
-            <div className="flex items-center justify-between border-b border-line p-4">
+    if (resource === "concept") {
+      return (
+        <div className="divide-y divide-line border-y border-line">
+          {conceptCards.map((card, index) => (
+            <section className="grid grid-cols-[40px_minmax(0,1fr)] gap-3 py-6" key={card.title}>
+              <span className="font-mono text-xs font-semibold text-signal-ink">
+                {String(index + 1).padStart(2, "0")}
+              </span>
               <div>
-                <p className="text-xs font-semibold uppercase text-teal">Assistant</p>
-                <h2 className="font-bold">AI 학습 도우미</h2>
+                <h3 className="font-extrabold tracking-[-0.02em] text-ink">{card.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{card.body}</p>
               </div>
-              <button className="icon-button" onClick={() => setChatOpen(false)} type="button" aria-label="챗봇 닫기">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <ChatPanel
-              chatInput={chatInput}
-              compact
-              messages={chatMessages}
-              onChangeInput={setChatInput}
-              onSend={sendChatMessage}
-              projectSummary={recommendation?.summary}
-              selectedService={selectedServiceInfo.title}
-              selectedTool={selectedToolInfo.name}
-              stepLabel={currentStep.label}
-            />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function BrandPanel({ progress }: { progress: number }) {
-  return (
-    <div className="rounded-lg border border-line bg-ink p-4 text-white shadow-soft">
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-md bg-teal">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase text-lemon">Plan to Build</p>
-          <h2 className="text-xl font-bold">VibeCraft</h2>
-        </div>
-      </div>
-      <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between text-xs text-white/70">
-          <span>전체 진행률</span>
-          <span>{progress}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white/15">
-          <div className="h-full rounded-full bg-lemon transition-all" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StepButton({
-  active,
-  done,
-  icon: Icon,
-  label,
-  onClick,
-  stepNumber,
-}: {
-  active: boolean;
-  done: boolean;
-  icon: typeof GraduationCap;
-  label: string;
-  onClick: () => void;
-  stepNumber: number;
-}) {
-  return (
-    <button
-      className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition ${
-        active ? "bg-teal text-white shadow-soft" : done ? "bg-canvas text-ink" : "text-muted hover:bg-canvas hover:text-ink"
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      <span
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-md border text-xs font-bold ${
-          active ? "border-white/20 bg-white/15" : done ? "border-leaf/30 bg-leaf/10 text-leaf" : "border-line bg-surface"
-        }`}
-      >
-        {done && !active ? <Check className="h-4 w-4" /> : stepNumber}
-      </span>
-      <Icon className="h-4 w-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{label}</span>
-      {active ? <ChevronRight className="h-4 w-4 shrink-0" /> : null}
-    </button>
-  );
-}
-
-function MobileTopBar({
-  currentStep,
-  onChat,
-  progress,
-  title,
-}: {
-  currentStep: string;
-  onChat: () => void;
-  progress: number;
-  title: string;
-}) {
-  return (
-    <header className="mb-3 rounded-lg border border-line bg-surface p-3 shadow-soft lg:hidden">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase text-teal">{currentStep}</p>
-          <h1 className="text-lg font-bold">{title}</h1>
-        </div>
-        <button className="icon-button" onClick={onChat} type="button" aria-label="챗봇 열기">
-          <Bot className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas">
-        <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${progress}%` }} />
-      </div>
-    </header>
-  );
-}
-
-function MobileBottomBar({
-  canGoBack,
-  canGoNext,
-  currentLabel,
-  onBack,
-  onChat,
-  onNext,
-}: {
-  canGoBack: boolean;
-  canGoNext: boolean;
-  currentLabel: string;
-  onBack: () => void;
-  onChat: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 backdrop-blur lg:hidden">
-      <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <button className="nav-button" disabled={!canGoBack} onClick={onBack} type="button">
-          <ArrowLeft className="h-4 w-4" />
-          이전
-        </button>
-        <button className="icon-button h-11 w-11" onClick={onChat} type="button" aria-label="챗봇 열기">
-          <PanelRightOpen className="h-5 w-5" />
-        </button>
-        <button className="nav-button justify-end bg-ink text-white" disabled={!canGoNext} onClick={onNext} type="button">
-          {currentLabel}
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function WorkSurface({
-  action,
-  children,
-  icon: Icon,
-  title,
-}: {
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  icon: typeof GraduationCap;
-  title: string;
-}) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-canvas text-teal">
-            <Icon className="h-5 w-5" />
-          </span>
-          <h3 className="text-lg font-bold">{title}</h3>
-        </div>
-        {action}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function ChoiceCard({
-  description,
-  icon: Icon,
-  meta,
-  onClick,
-  selected,
-  title,
-}: {
-  description: string;
-  icon: typeof GraduationCap;
-  meta: string;
-  onClick: () => void;
-  selected: boolean;
-  title: string;
-}) {
-  return (
-    <button
-      className={`group relative min-h-52 rounded-lg border p-4 text-left transition ${
-        selected
-          ? "border-teal bg-teal text-white shadow-strong"
-          : "border-line bg-surface hover:-translate-y-1 hover:border-teal hover:shadow-strong"
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      <span
-        className={`mb-5 grid h-11 w-11 place-items-center rounded-md ${
-          selected ? "bg-white/15 text-white" : "bg-canvas text-teal group-hover:bg-teal group-hover:text-white"
-        }`}
-      >
-        <Icon className="h-5 w-5" />
-      </span>
-      <h3 className="text-xl font-bold">{title}</h3>
-      <p className={`mt-3 text-sm leading-6 ${selected ? "text-white/82" : "text-muted"}`}>{description}</p>
-      <p className={`mt-5 text-xs leading-5 ${selected ? "text-white/72" : "text-muted"}`}>{meta}</p>
-      {selected ? (
-        <span className="absolute right-4 top-4 grid h-7 w-7 place-items-center rounded-full bg-white text-teal">
-          <Check className="h-4 w-4" />
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function FeatureTile({
-  accent,
-  description,
-  icon: Icon,
-  title,
-}: {
-  accent: "teal" | "blue";
-  description: string;
-  icon: typeof GraduationCap;
-  title: string;
-}) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-5 shadow-soft">
-      <div className={`mb-5 grid h-10 w-10 place-items-center rounded-md ${accent === "teal" ? "bg-teal text-white" : "bg-blue text-white"}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <h3 className="text-lg font-bold">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-muted">{description}</p>
-    </div>
-  );
-}
-
-function StatusTile({ icon: Icon, label, value }: { icon: typeof GraduationCap; label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/8 p-4">
-      <Icon className="mb-3 h-5 w-5 text-lemon" />
-      <p className="text-xs text-white/60">{label}</p>
-      <p className="mt-1 text-lg font-bold">{value}</p>
-    </div>
-  );
-}
-
-function StepBadge({ icon: Icon, label }: { icon: typeof GraduationCap; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-md bg-teal/10 px-3 py-1.5 text-xs font-bold text-teal">
-      <Icon className="h-4 w-4" />
-      {label}
-    </span>
-  );
-}
-
-function MiniPill({ label }: { label: string }) {
-  return <span className="rounded-md border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-muted">{label}</span>;
-}
-
-function PrimaryButton({
-  children,
-  disabled,
-  icon: Icon,
-  onClick,
-}: {
-  children: React.ReactNode;
-  disabled?: boolean;
-  icon: typeof GraduationCap;
-  onClick: () => void;
-}) {
-  return (
-    <button className="action-button bg-ink text-white" disabled={disabled} onClick={onClick} type="button">
-      {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-      {children}
-    </button>
-  );
-}
-
-function SecondaryButton({
-  children,
-  disabled,
-  icon: Icon,
-  onClick,
-}: {
-  children: React.ReactNode;
-  disabled?: boolean;
-  icon: typeof GraduationCap;
-  onClick: () => void;
-}) {
-  return (
-    <button className="action-button border border-line bg-surface text-ink hover:border-blue hover:text-blue" disabled={disabled} onClick={onClick} type="button">
-      {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-      {children}
-    </button>
-  );
-}
-
-function InsightStrip({ icon: Icon, text }: { icon: typeof GraduationCap; text: string }) {
-  return (
-    <div className="flex items-start gap-3 rounded-lg border border-blue/20 bg-blue/8 p-3 text-sm leading-6 text-muted">
-      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-blue" />
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function StepNote({ items, title }: { items: string[]; title: string }) {
-  return (
-    <div className="rounded-lg border border-line bg-canvas p-4">
-      <h4 className="font-bold">{title}</h4>
-      <BulletList items={items} />
-    </div>
-  );
-}
-
-function ChecklistRow({
-  item,
-  onChange,
-  status,
-}: {
-  item: ChecklistItem;
-  onChange: (status: ChecklistStatus) => void;
-  status: ChecklistStatus;
-}) {
-  const StatusIcon = statusMeta[status].icon;
-  return (
-    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-        <div className="flex min-w-0 gap-3">
-          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border ${statusMeta[status].className}`}>
-            <StatusIcon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <h3 className="font-bold">{item.title}</h3>
-            <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {(Object.keys(statusMeta) as ChecklistStatus[]).map((nextStatus) => (
-            <button
-              className={`rounded-md border px-2 py-2 text-xs font-bold transition ${
-                status === nextStatus ? statusMeta[nextStatus].className : "border-line bg-canvas text-muted hover:border-teal hover:text-teal"
-              }`}
-              key={nextStatus}
-              onClick={() => onChange(nextStatus)}
-              type="button"
-            >
-              {statusMeta[nextStatus].label}
-            </button>
+            </section>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }
 
-function SearchBox({
-  onChange,
-  placeholder,
-  value,
-}: {
-  onChange: (value: string) => void;
-  placeholder: string;
-  value: string;
-}) {
-  return (
-    <label className="relative block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-      <input className="field h-12 pl-10" onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
-    </label>
-  );
-}
-
-function TermTile({ role, term }: { role: Role; term: (typeof terms)[number] }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
-      <div className="flex items-start justify-between gap-3">
+    if (resource === "terms") {
+      return (
         <div>
-          <p className="text-xs font-bold uppercase text-teal">{term.category}</p>
-          <h3 className="mt-1 text-lg font-bold">{term.term}</h3>
-        </div>
-        <BookOpen className="h-5 w-5 shrink-0 text-teal" />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
-      <p className="mt-3 rounded-md bg-canvas p-3 text-sm leading-6 text-ink">{term.examples[role]}</p>
-      <TokenGrid items={term.related} />
-    </div>
-  );
-}
-
-function PromptTile({ onCopy, prompt }: { onCopy: () => void; prompt: (typeof promptTemplates)[number] }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-4 shadow-soft">
-      <p className="text-xs font-bold uppercase text-teal">{prompt.category}</p>
-      <h3 className="mt-2 text-lg font-bold">{prompt.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
-      <CodeBlock text={prompt.template} />
-      <button className="action-button mt-4 border border-line bg-surface text-ink hover:border-teal hover:text-teal" onClick={onCopy} type="button">
-        <Copy className="h-4 w-4" />
-        복사
-      </button>
-    </div>
-  );
-}
-
-function TokenGrid({ items }: { items: string[] }) {
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span className="rounded-md border border-line bg-canvas px-3 py-1.5 text-xs font-bold text-ink" key={item}>
-          {item}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function BulletList({ items }: { items: string[] }) {
-  return (
-    <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
-      {items.map((item) => (
-        <li className="flex gap-2" key={item}>
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function NumberList({ items }: { items: string[] }) {
-  return (
-    <ol className="mt-3 space-y-3 text-sm leading-6 text-muted">
-      {items.map((item, index) => (
-        <li className="flex gap-3" key={item}>
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-ink text-xs font-bold text-white">{index + 1}</span>
-          <span>{item}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function CodeBlock({ text }: { text: string }) {
-  return <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-line bg-ink p-4 text-xs leading-5 text-white/82">{text}</pre>;
-}
-
-function EmptyState({
-  actionLabel,
-  description,
-  icon: Icon,
-  onAction,
-  title,
-}: {
-  actionLabel: string;
-  description: string;
-  icon: typeof GraduationCap;
-  onAction: () => void;
-  title: string;
-}) {
-  return (
-    <div className="grid min-h-80 place-items-center rounded-lg border border-dashed border-line bg-canvas p-8 text-center">
-      <div>
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-md bg-teal text-white">
-          <Icon className="h-6 w-6" />
-        </div>
-        <h3 className="mt-5 text-xl font-bold">{title}</h3>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted">{description}</p>
-        <button className="action-button mx-auto mt-5 bg-ink text-white" onClick={onAction} type="button">
-          <ArrowRight className="h-4 w-4" />
-          {actionLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ChatPanel({
-  chatInput,
-  compact = false,
-  messages,
-  onChangeInput,
-  onSend,
-  projectSummary,
-  selectedService,
-  selectedTool,
-  stepLabel,
-}: {
-  chatInput: string;
-  compact?: boolean;
-  messages: ChatMessage[];
-  onChangeInput: (value: string) => void;
-  onSend: () => void;
-  projectSummary?: string;
-  selectedService: string;
-  selectedTool: string;
-  stepLabel: string;
-}) {
-  return (
-    <div className={`flex ${compact ? "h-full border-0 shadow-none" : "sticky top-3 h-[calc(100vh-24px)]"} flex-col rounded-lg border border-line bg-surface shadow-soft`}>
-      <div className="border-b border-line p-4">
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-md bg-blue text-white">
-            <Bot className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase text-blue">Context helper</p>
-            <h2 className="font-bold">AI 학습 도우미</h2>
+          <label className="relative block">
+            <span className="sr-only">용어 검색</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              className="field pl-10"
+              onChange={(event) => setTermSearch(event.target.value)}
+              placeholder="터미널, Vercel, 환경변수 검색"
+              value={termSearch}
+            />
+          </label>
+          <div className="mt-7 divide-y divide-line border-y border-line">
+            {filteredTerms.map((term) => (
+              <article className="py-6" key={term.term}>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
+                  {term.category}
+                </p>
+                <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink">
+                  {term.term}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
+                <p className="mt-4 border-l-2 border-line pl-4 text-sm leading-6 text-ink">
+                  {term.examples[activeRole]}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {term.related.map((item) => (
+                    <span
+                      className="border border-line bg-canvas px-2 py-1 font-mono text-[10px] text-muted"
+                      key={item}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
           </div>
         </div>
-        <div className="mt-4 grid gap-2 text-xs">
-          <MiniPill label={`단계: ${stepLabel}`} />
-          <MiniPill label={`도구: ${selectedTool}`} />
-          <MiniPill label={`유형: ${selectedService}`} />
-          {projectSummary ? <MiniPill label={`요약: ${projectSummary}`} /> : null}
+      );
+    }
+
+    if (resource === "prompts") {
+      return (
+        <div>
+          <label className="relative block">
+            <span className="sr-only">프롬프트 검색</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              className="field pl-10"
+              onChange={(event) => setPromptSearch(event.target.value)}
+              placeholder="배포, 에러, 모바일 검색"
+              value={promptSearch}
+            />
+          </label>
+          <p className="mt-3 text-xs leading-5 text-muted">
+            현재 선택한 {selectedToolInfo.name}에 맞는 템플릿을 보여줍니다.
+          </p>
+          <div className="mt-7 space-y-9">
+            {filteredPrompts.map((prompt) => (
+              <article className="border-t border-line pt-6" key={prompt.id}>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
+                  {prompt.category}
+                </p>
+                <h3 className="mt-2 text-lg font-black tracking-[-0.025em] text-ink">
+                  {prompt.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
+                <pre className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap border border-ink bg-ink p-4 text-xs leading-6 text-surface">
+                  {prompt.template}
+                </pre>
+                <SecondaryButton
+                  className="mt-3"
+                  icon={Copy}
+                  onClick={() => copyPrompt(prompt.template)}
+                >
+                  프로젝트 내용으로 복사
+                </SecondaryButton>
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-        {messages.map((message, index) => (
-          <div
-            className={`max-w-[92%] rounded-lg border p-3 text-sm leading-6 ${
-              message.role === "user" ? "ml-auto border-teal/30 bg-teal/10 text-ink" : "border-line bg-canvas text-ink"
-            }`}
-            key={`${message.role}-${index}`}
+      );
+    }
+
+    if (resource === "error") {
+      return (
+        <div>
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-ink">
+              에러 메시지 또는 막힌 상황
+            </span>
+            <span className="mb-3 block text-xs leading-5 text-muted">
+              API 키와 DB 주소는 지우고, 실행한 명령어와 에러의 첫 부분을 함께 적어주세요.
+            </span>
+            <textarea
+              className="field min-h-52 resize-y font-mono text-xs"
+              onChange={(event) => setErrorMessage(event.target.value)}
+              placeholder="예: npm run build 실행 후 Module not found..."
+              value={errorMessage}
+            />
+          </label>
+          <PrimaryButton
+            className="mt-4 w-full"
+            disabled={busy === "error"}
+            icon={Wrench}
+            loading={busy === "error"}
+            onClick={solveCurrentError}
           >
-            {message.content}
-            {message.links?.length ? <TokenGrid items={message.links} /> : null}
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-line p-3">
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <input
-            className="field h-11"
-            onChange={(event) => onChangeInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") onSend();
-            }}
-            placeholder="질문 입력"
-            value={chatInput}
-          />
-          <button className="icon-button h-11 w-11 bg-ink text-white" onClick={onSend} type="button" aria-label="질문 보내기">
-            <Send className="h-4 w-4" />
-          </button>
+            해결 순서 만들기
+          </PrimaryButton>
+
+          {errorSolution ? (
+            <div className="mt-9 border-t border-line pt-7">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-danger">
+                분석 결과
+              </p>
+              <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink">
+                {errorSolution.summary}
+              </h3>
+              <h4 className="mt-7 text-sm font-bold text-ink">가능성이 높은 원인</h4>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
+                {errorSolution.possibleCauses.map((item) => (
+                  <li className="flex gap-3" key={item}>
+                    <AlertTriangle className="mt-1 h-4 w-4 shrink-0 text-danger" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <h4 className="mt-7 text-sm font-bold text-ink">확인 순서</h4>
+              <ol className="mt-3">
+                {errorSolution.solutionSteps.map((item, index) => (
+                  <li
+                    className="grid grid-cols-[32px_minmax(0,1fr)] border-t border-line py-3 text-sm leading-6"
+                    key={item}
+                  >
+                    <span className="font-mono text-xs text-signal-ink">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ol>
+              <SecondaryButton
+                className="mt-5"
+                icon={Copy}
+                onClick={() =>
+                  void copyText(
+                    errorSolution.suggestedPrompt.replaceAll(
+                      "{{errorMessage}}",
+                      errorMessage,
+                    ),
+                    "에러 해결 프롬프트를 복사했습니다.",
+                  )
+                }
+              >
+                AI에게 물어볼 문장 복사
+              </SecondaryButton>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex min-h-full flex-col">
+        <div className="border-l-2 border-signal bg-signal-soft px-4 py-3">
+          <p className="text-xs font-bold text-ink">현재 알고 있는 문맥</p>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            {phaseMetadata[safePhase].label} · {selectedToolInfo.name} ·{" "}
+            {selectedServiceInfo.title}
+          </p>
+        </div>
+        <div
+          aria-live="polite"
+          className="mt-6 min-h-0 flex-1 space-y-4 overflow-y-auto"
+        >
+          {chatMessages.map((message, index) => (
+            <div
+              className={
+                "max-w-[92%] border px-4 py-3 text-sm leading-6 " +
+                (message.role === "user"
+                  ? "ml-auto border-ink bg-ink text-surface"
+                  : "border-line bg-canvas text-ink")
+              }
+              key={message.role + "-" + index}
+            >
+              <p>{message.content}</p>
+              {message.links?.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {message.links.map((link) => (
+                    <button
+                      className={
+                        "border px-2 py-1 text-[11px] font-bold " +
+                        (message.role === "user"
+                          ? "border-surface/30 text-surface"
+                          : "border-line bg-surface text-signal-ink")
+                      }
+                      key={link}
+                      onClick={() => followAssistantLink(link)}
+                      type="button"
+                    >
+                      {link}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <div className="sticky bottom-0 mt-6 border-t border-line bg-surface pt-4 safe-area-bottom">
+          <label className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+            <span className="sr-only">프로젝트 코치에게 질문</span>
+            <input
+              className="field"
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.nativeEvent.isComposing &&
+                  !event.shiftKey
+                ) {
+                  event.preventDefault();
+                  void sendChatMessage();
+                }
+              }}
+              placeholder="지금 막힌 내용을 적어주세요"
+              value={chatInput}
+            />
+            <button
+              aria-label="질문 보내기"
+              className="icon-button border-ink bg-ink text-surface"
+              disabled={busy === "chat"}
+              onClick={() => void sendChatMessage()}
+              type="button"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </label>
         </div>
       </div>
+    );
+  }
+
+  const phaseContent =
+    safePhase === "start"
+      ? renderStartPhase()
+      : safePhase === "shape"
+        ? renderShapePhase()
+        : safePhase === "build"
+          ? renderBuildPhase()
+          : renderShipPhase();
+
+  const activeResourceMeta = resource ? resourceMetadata[resource] : null;
+
+  return (
+    <div className="min-h-screen bg-canvas text-ink">
+      <MobilePhaseNav
+        activePhase={safePhase}
+        onSelect={navigatePhase}
+        overallProgress={projectProgress.percent}
+        progress={projectProgress.phases}
+      />
+      <div className="flex min-h-screen">
+        <PhaseRail
+          activePhase={safePhase}
+          onSelect={navigatePhase}
+          progress={projectProgress.phases}
+        />
+        <main className="min-w-0 flex-1 pb-28 lg:pb-0">
+          <div className="mx-auto max-w-[1180px] px-4 py-7 sm:px-8 sm:py-10 lg:px-10 xl:px-14 xl:py-12">
+            <div className="mb-10 hidden flex-col gap-5 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between lg:flex">
+              <div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  {phaseMetadata[safePhase].step} / {phaseMetadata[safePhase].label}
+                </p>
+                {recommendation && safePhase !== "start" ? (
+                  <p className="mt-2 max-w-2xl line-clamp-1 text-sm font-bold text-ink">
+                    {recommendation.summary}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm font-bold text-ink">
+                    아이디어에서 배포까지, 한 번에 한 단계씩
+                  </p>
+                )}
+              </div>
+              <div className="w-full sm:w-56">
+                <ProgressBar value={projectProgress.percent} />
+              </div>
+            </div>
+
+            {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+            {phaseContent}
+          </div>
+        </main>
+      </div>
+
+      <ResourceDock onOpen={setResource} />
+
+      {activeResourceMeta ? (
+        <ResourceDrawer
+          eyebrow={activeResourceMeta.eyebrow}
+          onClose={closeResource}
+          open={Boolean(resource)}
+          title={activeResourceMeta.title}
+        >
+          <ResourceSwitcher activeResource={resource ?? "coach"} onChange={setResource} />
+          {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+          {renderResource()}
+        </ResourceDrawer>
+      ) : null}
     </div>
   );
 }

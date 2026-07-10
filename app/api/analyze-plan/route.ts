@@ -4,7 +4,7 @@ import { buildRecommendation } from "@/lib/recommendation";
 
 const schema = z.object({
   role: z.enum(["student", "teacher", "adult"]),
-  extractedText: z.string().min(10).max(50000),
+  extractedText: z.string().min(10).max(200000),
 });
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: "기획서 내용이 부족합니다. txt, md 내용을 붙여넣거나 아이디어를 더 자세히 입력해주세요.",
+        error: "기획서 내용은 10자 이상 200,000자 이하로 입력해주세요. 긴 문서는 핵심 범위만 남기면 더 정확합니다.",
       },
       { status: 400 },
     );

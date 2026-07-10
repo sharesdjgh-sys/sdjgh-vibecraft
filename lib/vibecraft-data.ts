@@ -164,6 +164,18 @@ export const baseChecklist: ChecklistItem[] = [
   { id: "final-check", title: "배포 전 점검", description: "보안, 환경변수, 버튼 동작, 모바일 화면을 최종 확인합니다." },
 ];
 
+export const softwareChecklist: ChecklistItem[] = [
+  { id: "github-account", title: "GitHub 계정 준비", description: "프로젝트와 변경 기록을 보관할 계정을 확인합니다." },
+  { id: "automation-sample", title: "입력 사례 준비", description: "실제로 처리할 자료 한 개와 기대 결과를 나란히 준비합니다." },
+  { id: "project-create", title: "자동화 프로젝트 생성", description: "Node.js와 TypeScript 기반으로 실행 가능한 프로젝트를 시작합니다." },
+  { id: "local-run", title: "로컬 실행", description: "개발 환경에서 입력 → 처리 → 결과 흐름이 한 번 끝나는지 확인합니다." },
+  { id: "core-process", title: "핵심 처리 구현", description: "가장 반복되는 작업 하나를 안정적으로 자동화합니다." },
+  { id: "failure-message", title: "실패 상황 안내", description: "잘못된 입력과 외부 연동 실패 시 다음 행동을 알려줍니다." },
+  { id: "error-review", title: "에러 해결", description: "실행 로그를 해결 도우미에 붙여넣고 원인을 확인합니다." },
+  { id: "share-runbook", title: "실행 방법 공유", description: "다른 사람이 설치하고 실행할 수 있는 짧은 안내를 작성합니다." },
+  { id: "final-check", title: "공개 전 점검", description: "비밀 정보, 입력 사례, 실패 메시지, 공유 주소를 최종 확인합니다." },
+];
+
 export const terms: TermInfo[] = [
   {
     term: "터미널",
@@ -274,11 +286,11 @@ export const promptTemplates: PromptTemplate[] = [
 
 export const deploymentChecks: ChecklistItem[] = [
   { id: "mobile-layout", title: "모바일 화면", description: "텍스트, 카드, 버튼이 작은 화면에서 겹치지 않습니다." },
-  { id: "button-flow", title: "주요 버튼", description: "시작, 추천 생성, 복사, 체크리스트 버튼이 모두 동작합니다." },
+  { id: "button-flow", title: "핵심 사용자 흐름", description: "처음 접속한 사용자가 핵심 행동을 처음부터 끝까지 완료할 수 있습니다." },
   { id: "secret-safe", title: "비밀키 보호", description: "API 키와 DB URL이 클라이언트 코드에 노출되지 않습니다." },
-  { id: "env-ready", title: "환경변수", description: "Vercel 환경변수에 필요한 값이 등록되어 있습니다." },
-  { id: "db-ready", title: "DB 연결", description: "Neon DB가 필요한 기능에서 정상 연결됩니다." },
-  { id: "first-user", title: "첫 사용자 흐름", description: "처음 접속한 사용자가 다음 행동을 바로 알 수 있습니다." },
+  { id: "env-ready", title: "환경변수", description: "공개 환경에 필요한 설정값이 빠짐없이 등록되어 있습니다." },
+  { id: "db-ready", title: "데이터 연결", description: "저장 기능이 공개 환경에서도 정상적으로 동작합니다." },
+  { id: "first-user", title: "첫 사용자 테스트", description: "프로젝트를 모르는 사람이 설명 없이 첫 행동을 찾을 수 있습니다." },
 ];
 
 export const stepLabels = [
