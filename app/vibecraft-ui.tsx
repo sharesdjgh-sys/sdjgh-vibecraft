@@ -72,84 +72,47 @@ export function ProgressBar({
 export function PhaseRail({
   activePhase,
   onSelect,
-  overallProgress,
   progress,
 }: {
   activePhase: PhaseId;
   onSelect: (phase: PhaseId) => void;
-  overallProgress: number;
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-line bg-surface/85 backdrop-blur-xl lg:flex">
-      <div className="px-6 pb-7 pt-8">
-        <BrandLockup />
-      </div>
-      <nav aria-label="프로젝트 진행 단계" className="min-h-0 flex-1 overflow-y-auto px-4">
-        <p className="px-3 pb-4 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">
-          Mission Route
-        </p>
-        <ol className="space-y-1">
-          {phaseOrder.map((phaseId, index) => {
+    <header className="pointer-events-none fixed inset-x-0 top-4 z-40 hidden px-6 lg:block">
+      <div className="pointer-events-auto mx-auto grid h-14 max-w-[1240px] grid-cols-[180px_minmax(0,1fr)_180px] items-center gap-6 rounded-2xl border border-line/80 bg-surface/80 px-4 shadow-[0_18px_48px_rgba(104,66,47,.12)] backdrop-blur-xl">
+        <BrandLockup compact />
+        <nav aria-label="프로젝트 진행 단계" className="mx-auto flex items-center gap-1 rounded-full bg-canvas p-1">
+          {phaseOrder.map((phaseId) => {
             const phase = phaseMetadata[phaseId];
             const active = activePhase === phaseId;
             const done = progress[phaseId].percent === 100;
             return (
-              <li className="relative" key={phaseId}>
-                {index < phaseOrder.length - 1 ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute bottom-0 left-[27px] top-12 w-px bg-line"
-                  />
-                ) : null}
-                <button
-                  aria-current={active ? "step" : undefined}
-                  className={`relative flex w-full items-start gap-3 rounded-2xl px-3 py-3.5 text-left transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
-                    active
-                      ? "bg-signal-soft ring-1 ring-signal/20 shadow-soft"
-                      : "hover:bg-canvas"
-                  }`}
-                  onClick={() => onSelect(phaseId)}
-                  type="button"
-                >
-                  <span
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-full font-mono text-[11px] font-bold transition-colors duration-300 ${
-                      active
-                        ? "bg-signal text-white shadow-[0_6px_18px_rgba(207,92,57,.35)]"
-                        : done
-                          ? "border border-success/40 bg-success/15 text-success"
-                          : "border border-line bg-canvas text-muted"
-                    }`}
-                  >
-                    {done && !active ? <Check className="h-3.5 w-3.5" /> : phase.step}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={`block text-sm font-bold ${active ? "text-ink" : done ? "text-success" : "text-muted"}`}>
-                      {phase.label}
-                    </span>
-                    <span className="mt-0.5 block font-mono text-[10px] font-semibold text-muted">
-                      {progress[phaseId].total > 0
-                        ? `${progress[phaseId].completed}/${progress[phaseId].total} · ${progress[phaseId].percent}%`
-                        : `${progress[phaseId].percent}%`}
-                    </span>
-                  </span>
-                  {active ? (
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-signal shadow-[0_0_12px_currentColor]" />
-                  ) : null}
-                </button>
-              </li>
+              <button
+                aria-current={active ? "step" : undefined}
+                className={`flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all duration-300 ${
+                  active ? "bg-surface text-ink shadow-[0_6px_20px_rgba(104,66,47,.12)]" : done ? "text-success" : "text-muted opacity-60 hover:opacity-100"
+                }`}
+                key={phaseId}
+                onClick={() => onSelect(phaseId)}
+                type="button"
+              >
+                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+                  active ? "bg-signal text-white" : done ? "bg-success text-white" : "bg-line text-muted"
+                }`}>
+                  {done && !active ? <Check className="h-3.5 w-3.5" /> : Number(phase.step)}
+                </span>
+                <span>{phase.label}</span>
+              </button>
             );
           })}
-        </ol>
-      </nav>
-      <div className="border-t border-line px-6 py-6">
-        <ProgressBar value={overallProgress} />
-        <div className="mt-5 flex items-center gap-2 text-[11px] font-semibold text-success" aria-live="polite">
+        </nav>
+        <div className="flex items-center justify-end gap-2 text-xs font-semibold text-success" aria-live="polite">
           <Cloud className="h-4 w-4" />
           자동 저장됐어요
         </div>
       </div>
-    </aside>
+    </header>
   );
 }
 
@@ -165,25 +128,14 @@ export function MobilePhaseNav({
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <>
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
-        <div className="flex items-center justify-between">
-          <BrandLockup compact />
-          <span className="font-mono text-[10px] font-semibold text-muted">
-            전체 <strong className="text-ink">{overallProgress}%</strong>
-          </span>
-        </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-line">
-          <div
-            className="h-full rounded-full bg-signal shadow-[0_0_10px_rgba(207,92,57,.35)] transition-[width] duration-500"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
-      </header>
-      <nav
-        aria-label="프로젝트 진행 단계"
-        className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface/95 p-1.5 shadow-drawer backdrop-blur-xl lg:hidden"
-      >
+    <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+      <div className="flex items-center justify-between">
+        <BrandLockup compact />
+        <span className="font-mono text-[10px] font-semibold text-muted">
+          전체 <strong className="text-ink">{overallProgress}%</strong>
+        </span>
+      </div>
+      <nav aria-label="프로젝트 진행 단계" className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-canvas p-1">
         {phaseOrder.map((phaseId) => {
           const phase = phaseMetadata[phaseId];
           const active = activePhase === phaseId;
@@ -191,28 +143,22 @@ export function MobilePhaseNav({
           return (
             <button
               aria-current={active ? "step" : undefined}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-center transition-all duration-300 ${
-                active
-                  ? "bg-signal-soft text-ink shadow-soft"
-                  : done
-                    ? "text-success"
-                    : "text-muted"
+              className={`min-h-9 min-w-0 rounded-full px-1 text-center text-[11px] font-bold transition-colors ${
+                active ? "bg-surface text-ink shadow-soft" : done ? "text-success" : "text-muted opacity-60"
               }`}
               key={phaseId}
               onClick={() => onSelect(phaseId)}
               type="button"
             >
-              <span
-                className={`font-mono text-[9px] font-bold ${active ? "text-signal-ink" : ""}`}
-              >
-                {done && !active ? <Check className="h-3 w-3" /> : phase.step}
-              </span>
-              <span className="block w-full truncate text-[11px] font-bold">{phase.label}</span>
+              <span className="block truncate">{done && !active ? "✓ " : ""}{phase.label}</span>
             </button>
           );
         })}
       </nav>
-    </>
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-line">
+        <div className="h-full rounded-full bg-signal transition-[width] duration-500" style={{ width: `${overallProgress}%` }} />
+      </div>
+    </header>
   );
 }
 

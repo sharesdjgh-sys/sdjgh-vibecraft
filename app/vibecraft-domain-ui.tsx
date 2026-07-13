@@ -495,7 +495,7 @@ export function ResourceDock({
   return (
     <button
       aria-label="프로젝트 코치 열기"
-      className="fixed bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.5rem)] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_10px_28px_rgba(207,92,57,.32)] transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:scale-[1.02] hover:bg-signal-ink active:scale-[.98] lg:bottom-6 lg:right-6"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_10px_28px_rgba(207,92,57,.32)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:bg-signal-ink active:scale-[.98] lg:bottom-6 lg:right-6"
       onClick={() => onOpen("coach")}
       type="button"
     >

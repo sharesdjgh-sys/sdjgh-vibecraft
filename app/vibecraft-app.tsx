@@ -1912,20 +1912,21 @@ export function VibeCraftApp() {
         overallProgress={projectProgress.percent}
         progress={projectProgress.phases}
       />
-      <PhaseRail
-        activePhase={safePhase}
-        onSelect={navigatePhase}
-        overallProgress={projectProgress.percent}
-        progress={projectProgress.phases}
-      />
-      <main className="min-w-0 pb-36 lg:pb-16 lg:pl-[280px]">
-        <div className="mx-auto max-w-[1120px] px-4 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
-          {notice ? <InlineNotice>{notice}</InlineNotice> : null}
-          <div className="phase-enter" key={safePhase}>
-            {phaseContent}
+      <div className="min-h-screen lg:pt-24">
+        <PhaseRail
+          activePhase={safePhase}
+          onSelect={navigatePhase}
+          progress={projectProgress.phases}
+        />
+        <main className="min-w-0 pb-28 lg:pb-16">
+          <div className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+            {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+            <div className="phase-enter" key={safePhase}>
+              {phaseContent}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       <ResourceDock onOpen={setResource} />
 
