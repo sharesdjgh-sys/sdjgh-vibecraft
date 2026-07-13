@@ -59,7 +59,6 @@ import type {
 import {
   BriefList,
   JourneySketch,
-  MetaRow,
   MissionCard,
   ProjectEmptyState,
   ResourceDock,
@@ -135,6 +134,24 @@ const serviceIcons: Record<ServiceType, LucideIcon> = {
   web: Code2,
   "mobile-web": Smartphone,
   software: Terminal,
+};
+
+const toolThemes: Record<ToolSlug, string> = {
+  codex: "tile-blue",
+  claude: "tile-amber",
+  antigravity: "tile-violet",
+};
+
+const serviceThemes: Record<ServiceType, string> = {
+  web: "tile-blue",
+  "mobile-web": "tile-violet",
+  software: "tile-amber",
+};
+
+const serviceLayouts: Record<ServiceType, string> = {
+  web: "lg:col-span-5",
+  "mobile-web": "lg:col-span-4",
+  software: "lg:col-span-3",
 };
 
 function usePersistentState<T>(key: string, initialValue: T) {
@@ -717,15 +734,15 @@ export function VibeCraftApp() {
 
   function renderStartPhase() {
     return (
-      <section className="grid w-full min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+      <section className="grid w-full min-w-0 gap-10 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div>
           <Eyebrow>새 프로젝트 · 01</Eyebrow>
-          <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
+          <h1 className="type-display mt-4 text-ink">
             기획을 멈추지 말고,
             <br />
             실제 서비스로 만드세요.
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
+          <p className="type-body mt-6 max-w-2xl text-muted">
             VibeCraft는 많은 개발 지식을 한꺼번에 보여주지 않습니다. 지금 프로젝트에 필요한
             다음 행동 하나를 정하고, 배포 링크가 생길 때까지 함께 갑니다.
           </p>
@@ -749,8 +766,8 @@ export function VibeCraftApp() {
           ) : null}
 
           <div className="hud-panel relative mt-10 rounded-[1.25rem] p-5 sm:p-6">
-            <p className="text-sm font-bold text-ink">누구의 상황에 맞춰 설명할까요?</p>
-            <p className="mt-1 text-xs leading-5 text-muted">
+            <p className="type-title text-ink">누구의 상황에 맞춰 설명할까요?</p>
+            <p className="type-body mt-1 text-muted">
               역할은 추천의 말투와 예시를 바꿉니다. 언제든 다시 선택할 수 있습니다.
             </p>
             <RoleSelector role={role} onChange={handleRoleChange} />
@@ -899,12 +916,12 @@ export function VibeCraftApp() {
     return (
       <section>
         <Eyebrow>프로젝트 설계 · 02</Eyebrow>
-        <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
+        <h1 className="type-display mt-4 text-ink">
           만들 수 있는 크기로
           <br />
           프로젝트를 다듬습니다.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-muted">
+        <p className="type-body mt-5 max-w-2xl text-muted">
           추천은 정답이 아니라 출발점입니다. 프로젝트의 목적을 먼저 확인하고 도구와 구현
           형태를 직접 결정하세요.
         </p>
@@ -933,9 +950,9 @@ export function VibeCraftApp() {
             />
 
             {editingBrief ? (
-              <div className="mt-7 grid gap-7">
+              <div className="brief-shell mt-8 grid gap-7 p-5 sm:p-8">
                 <label>
-                  <span className="mb-2 block text-sm font-bold text-ink">한 줄 설명</span>
+                  <span className="type-label mb-2 block text-ink">한 줄 설명</span>
                   <textarea
                     className="field min-h-28"
                     onChange={(event) =>
@@ -946,7 +963,7 @@ export function VibeCraftApp() {
                 </label>
                 <div className="grid gap-7 md:grid-cols-2">
                   <label>
-                    <span className="mb-2 block text-sm font-bold text-ink">
+                    <span className="type-label mb-2 block text-ink">
                       핵심 사용자 · 한 줄에 하나
                     </span>
                     <textarea
@@ -961,7 +978,7 @@ export function VibeCraftApp() {
                     />
                   </label>
                   <label>
-                    <span className="mb-2 block text-sm font-bold text-ink">
+                    <span className="type-label mb-2 block text-ink">
                       핵심 기능 · 한 줄에 하나
                     </span>
                     <textarea
@@ -978,75 +995,165 @@ export function VibeCraftApp() {
                 </div>
               </div>
             ) : (
-              <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div>
-                  <blockquote className="max-w-3xl text-2xl font-extrabold leading-10 tracking-[-0.035em] text-ink sm:text-3xl sm:leading-[1.45]">
-                    “{recommendation.summary}”
-                  </blockquote>
-                  <div className="mt-10 grid gap-8 md:grid-cols-2">
-                    <BriefList
-                      eyebrow="누구를 위해"
-                      items={recommendation.targetUsers}
-                      title="핵심 사용자"
-                    />
-                    <BriefList
-                      eyebrow="무엇을 먼저"
-                      items={recommendation.mainFeatures}
-                      ordered
-                      title="MVP 핵심 기능"
-                    />
-                  </div>
-                </div>
-                <aside className="rounded-2xl bg-canvas p-5">
-                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
-                    현재 결정
-                  </p>
-                  <dl className="mt-5 space-y-5">
-                    <MetaRow label="난이도" value={recommendation.difficulty} />
-                    <MetaRow
-                      label="제작 도구"
-                      value={selectedTool ? selectedToolInfo.name : "미확정 · 추천 " + recommendedToolInfo.name}
-                    />
-                    <MetaRow
-                      label="서비스 형태"
-                      value={
-                        selectedServiceType
-                          ? selectedServiceInfo.title
-                          : "미확정 · 추천 " + recommendedServiceInfo.title
-                      }
-                    />
-                  </dl>
-                  <button
-                    className="mt-7 flex items-center gap-2 text-sm font-bold text-signal-ink hover:underline"
-                    onClick={() => setResource("concept")}
-                    type="button"
-                  >
-                    <Lightbulb className="h-4 w-4" />
-                    시작 전 핵심 원칙
-                  </button>
-                </aside>
-              </div>
-            )}
+              <article className="brief-shell mt-8">
+                <header className="brief-hero px-5 py-7 sm:px-8 sm:py-9">
+                  <div className="relative z-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-surface/60">
+                        <FileText className="h-4 w-4 text-signal" />
+                        프로젝트 브리프 // AI 분석
+                      </div>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-success/35 bg-success/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-success">
+                        <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_10px_currentColor]" />
+                        분석 완료
+                      </span>
+                    </div>
 
-            <div className="mt-14">
-              <SectionHeading
-                description="순서가 막막할 때 돌아올 수 있는 프로젝트의 큰 경로입니다."
-                title="구현 경로"
-              />
-              <ol className="mt-2">
-                {displayedRoadmap.map((item, index) => (
-                  <li
-                    className="grid grid-cols-[48px_minmax(0,1fr)] border-b border-line py-5"
-                    key={item}
-                  >
-                    <span className="font-mono text-xs font-semibold text-signal-ink">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="text-sm font-semibold leading-6 text-ink">{item}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
+                    <p className="type-label mt-9 text-signal">핵심 목표</p>
+                    <h2 className="type-display mt-3 max-w-4xl text-surface">
+                      {recommendation.summary}
+                    </h2>
+
+                    <dl className="mt-8 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                          핵심 사용자
+                        </dt>
+                        <dd className="type-title mt-1 text-surface">
+                          {recommendation.targetUsers.length}개 사용자군
+                        </dd>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                          MVP 범위
+                        </dt>
+                        <dd className="type-title mt-1 text-surface">
+                          {recommendation.mainFeatures.length}개 핵심 기능
+                        </dd>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                          제작 난이도
+                        </dt>
+                        <dd className="type-title mt-1 text-surface">{recommendation.difficulty}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </header>
+
+                <div className="p-5 sm:p-8">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+                    <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+                      <BriefList
+                        eyebrow="누구를 위한 서비스인가"
+                        icon={Flag}
+                        items={recommendation.targetUsers}
+                        tone="tile-blue"
+                        title="핵심 사용자"
+                      />
+                      <BriefList
+                        eyebrow="무엇을 먼저 만들 것인가"
+                        icon={ClipboardList}
+                        items={recommendation.mainFeatures}
+                        ordered
+                        tone="tile-violet"
+                        title="MVP 핵심 기능"
+                      />
+                    </div>
+
+                    <aside className="relative overflow-hidden rounded-[1.25rem] bg-ink p-5 text-surface shadow-strong before:absolute before:-right-16 before:-top-16 before:h-44 before:w-44 before:rounded-full before:bg-signal/25 before:blur-3xl sm:p-6">
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2">
+                          <Wrench className="h-4 w-4 text-signal" />
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-surface/55">
+                            빌드 사양
+                          </p>
+                        </div>
+                        <dl className="mt-6 space-y-5">
+                          <div className="border-b border-white/10 pb-4">
+                            <dt className="type-label text-surface/45">제작 도구</dt>
+                            <dd className="type-title mt-1 text-surface">
+                              {selectedTool ? selectedToolInfo.name : recommendedToolInfo.name}
+                            </dd>
+                            {!selectedTool ? (
+                              <span className="mt-1 block text-xs font-semibold text-signal">AI 추천</span>
+                            ) : null}
+                          </div>
+                          <div className="border-b border-white/10 pb-4">
+                            <dt className="type-label text-surface/45">서비스 형태</dt>
+                            <dd className="type-title mt-1 text-surface">
+                              {selectedServiceType
+                                ? selectedServiceInfo.title
+                                : recommendedServiceInfo.title}
+                            </dd>
+                            {!selectedServiceType ? (
+                              <span className="mt-1 block text-xs font-semibold text-signal">AI 추천</span>
+                            ) : null}
+                          </div>
+                          <div>
+                            <dt className="type-label text-surface/45">추천 스택</dt>
+                            <dd className="mt-3 flex flex-wrap gap-1.5">
+                              {displayedStack.map((item) => (
+                                <span
+                                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-surface/75"
+                                  key={item}
+                                >
+                                  {item}
+                                </span>
+                              ))}
+                            </dd>
+                          </div>
+                        </dl>
+                        <button
+                          className="mt-7 flex items-center gap-2 text-sm font-bold text-signal hover:text-surface"
+                          onClick={() => setResource("concept")}
+                          type="button"
+                        >
+                          <Lightbulb className="h-4 w-4" />
+                          시작 전 핵심 원칙 보기
+                          <ChevronRight className="ml-auto h-4 w-4" />
+                        </button>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <section className="mt-8 border-t border-line pt-8">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal-soft text-signal-ink">
+                        <Rocket className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-signal-ink">
+                          미션 루트
+                        </p>
+                        <h3 className="type-title mt-1 text-ink">구현 경로</h3>
+                      </div>
+                    </div>
+                    <ol className="stagger mt-5 grid gap-3 lg:grid-cols-5">
+                      {displayedRoadmap.map((item, index) => (
+                        <li
+                          className={
+                            "relative rounded-xl border p-4 " +
+                            (index === 0
+                              ? "border-signal/35 bg-signal-soft"
+                              : "border-line bg-canvas")
+                          }
+                          key={item}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[10px] font-bold text-signal-ink">
+                              M-{String(index + 1).padStart(2, "0")}
+                            </span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-signal/50" />
+                          </div>
+                          <p className="mt-3 text-sm font-semibold leading-6 text-ink">{item}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                </div>
+              </article>
+            )}
           </div>
         ) : null}
 
@@ -1062,7 +1169,7 @@ export function VibeCraftApp() {
               </p>
               <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[1]}</p>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="stagger mt-4 space-y-3">
               {tools.map((tool, index) => {
                 const selected = selectedTool === tool.slug;
                 const recommended = recommendation.recommendedTool === tool.slug;
@@ -1070,8 +1177,8 @@ export function VibeCraftApp() {
                 return (
                   <div
                     className={
-                      "overflow-hidden rounded-[1.125rem] border-2 transition-all " +
-                      (selected ? "border-signal bg-ink text-surface shadow-soft" : "border-line bg-surface text-ink hover:border-signal")
+                      `semantic-tile ${toolThemes[tool.slug]} overflow-hidden rounded-[1.125rem] text-ink transition-all hover:shadow-soft ` +
+                      (selected ? "is-selected" : "")
                     }
                     key={tool.slug}
                   >
@@ -1096,20 +1203,19 @@ export function VibeCraftApp() {
                         className={
                           "grid h-10 w-10 place-items-center border " +
                           (selected
-                            ? "border-surface/20 bg-surface/10 text-signal"
-                            : "border-line bg-surface text-muted")
+                            ? "semantic-icon border-transparent"
+                            : "border-line bg-surface/70 text-muted")
                         }
                       >
                         <Icon className="h-4 w-4" />
                       </span>
                       <span>
-                        <span className="block text-xl font-extrabold tracking-[-0.03em]">
+                        <span className="type-title block">
                           {tool.name}
                         </span>
                         <span
                           className={
-                            "mt-1 block text-sm leading-6 " +
-                            (selected ? "text-surface/65" : "text-muted")
+                            "type-body mt-1 block text-muted"
                           }
                         >
                           {tool.tagline}
@@ -1121,13 +1227,13 @@ export function VibeCraftApp() {
                       </span>
                     </button>
                     {selected ? (
-                      <div className="grid gap-8 border-t border-surface/15 px-4 py-7 sm:ml-[104px] md:grid-cols-2">
+                      <div className="grid gap-8 border-t border-line px-4 py-7 sm:ml-[104px] md:grid-cols-2">
                         <div>
                           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-signal">
                             잘 맞는 이유
                           </p>
                           <p className="mt-3 text-sm font-semibold leading-6">{tool.bestFor}</p>
-                          <ul className="mt-4 space-y-2 text-sm leading-6 text-surface/70">
+                          <ul className="type-body mt-4 space-y-2 text-muted">
                             {tool.strengths.map((item) => (
                               <li className="flex gap-2" key={item}>
                                 <Check className="mt-1 h-4 w-4 shrink-0 text-signal" />
@@ -1140,7 +1246,7 @@ export function VibeCraftApp() {
                           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-signal">
                             먼저 알아둘 점
                           </p>
-                          <ul className="mt-3 space-y-3 text-sm leading-6 text-surface/70">
+                          <ul className="type-body mt-3 space-y-3 text-muted">
                             {tool.cautions.map((item) => (
                               <li className="flex gap-2" key={item}>
                                 <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-signal" />
@@ -1170,7 +1276,7 @@ export function VibeCraftApp() {
               </p>
               <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[0]}</p>
             </div>
-            <div className="mt-6 grid gap-3 lg:grid-cols-3">
+            <div className="stagger mt-6 grid gap-3 lg:grid-cols-12">
               {serviceTypes.map((service, index) => {
                 const selected = selectedServiceType === service.id;
                 const recommended = recommendation.recommendedServiceType === service.id;
@@ -1179,10 +1285,8 @@ export function VibeCraftApp() {
                   <button
                     aria-pressed={selected}
                     className={
-                      "min-h-64 rounded-[1.125rem] border-2 p-6 text-left transition-all " +
-                      (selected
-                        ? "border-signal bg-surface text-ink shadow-soft"
-                        : "border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
+                      `semantic-tile ${serviceThemes[service.id]} ${serviceLayouts[service.id]} min-h-64 rounded-[1.25rem] p-6 text-left text-ink hover:-translate-y-1 hover:shadow-soft ` +
+                      (selected ? "is-selected" : "")
                     }
                     key={service.id}
                     onClick={() => selectServiceType(service.id)}
@@ -1202,13 +1306,12 @@ export function VibeCraftApp() {
                         <Icon className="h-5 w-5 text-muted" />
                       )}
                     </span>
-                    <span className="mt-14 block text-2xl font-black tracking-[-0.03em]">
+                    <span className="type-title mt-14 block">
                       {service.title}
                     </span>
                     <span
                       className={
-                        "mt-3 block text-sm leading-6 " +
-                        (selected ? "text-ink/70" : "text-muted")
+                        "type-body mt-3 block text-muted"
                       }
                     >
                       {service.description}
@@ -1285,7 +1388,7 @@ export function VibeCraftApp() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Eyebrow>실제 제작 · 03</Eyebrow>
-            <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
+            <h1 className="type-display mt-4 text-ink">
               오늘 필요한 한 단계에만
               <br />
               집중하세요.
@@ -1311,7 +1414,7 @@ export function VibeCraftApp() {
           ) : (
             <div className="rounded-[1.25rem] border border-success/20 bg-success/10 px-5 py-8 sm:px-8">
               <CheckCircle2 className="h-8 w-8 text-success" />
-              <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
+              <h2 className="type-display mt-5 text-ink">
                 제작 체크리스트를 모두 완료했습니다.
               </h2>
               <p className="mt-3 text-sm leading-6 text-muted">
@@ -1329,7 +1432,7 @@ export function VibeCraftApp() {
             description="진행 중인 작업은 하나만 두는 것이 좋습니다. 막히면 해당 문맥이 해결 도우미로 자동 전달됩니다."
             title="전체 작업"
           />
-          <div className="mt-2">
+          <div className="stagger mt-2">
             {checklistItems.map((item, index) => (
               <TaskRow
                 index={index}
@@ -1383,7 +1486,7 @@ export function VibeCraftApp() {
         <Eyebrow>세상에 공개 · 04</Eyebrow>
         <div className="mt-4 grid gap-8 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-end">
           <div>
-            <h1 className="text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
+            <h1 className="type-display text-ink">
               링크를 공유할 수 있을 때
               <br />
               프로젝트는 비로소 완성됩니다.
@@ -1406,7 +1509,7 @@ export function VibeCraftApp() {
         {ready ? (
           <div className="mt-10 rounded-[1.25rem] border border-success/20 bg-success/10 px-5 py-8 sm:px-8 sm:py-10">
             <Flag className="h-8 w-8 text-success" />
-            <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
+            <h2 className="type-display mt-5 text-ink">
               서비스가 세상에 나왔습니다.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
@@ -1443,7 +1546,7 @@ export function VibeCraftApp() {
               description={"완료한 점검 " + deployDone + "/" + deploymentItems.length}
               title="공개 전 최종 점검"
             />
-            <div className="mt-2">
+            <div className="stagger mt-2">
               {deploymentItems.map((item, index) => (
                 <TaskRow
                   index={index}
@@ -1459,7 +1562,7 @@ export function VibeCraftApp() {
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-ink">
               최종 산출물
             </p>
-            <h2 className="mt-3 text-2xl font-black tracking-[-0.035em] text-ink">
+            <h2 className="type-title mt-3 text-ink">
               {activeServiceType === "software" ? "공유 URL 기록" : "배포 URL 기록"}
             </h2>
             <p className="mt-3 text-sm leading-6 text-muted">
@@ -1536,7 +1639,7 @@ export function VibeCraftApp() {
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div>
-                <h3 className="font-extrabold tracking-[-0.02em] text-ink">{card.title}</h3>
+                <h3 className="type-title text-ink">{card.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{card.body}</p>
               </div>
             </section>
@@ -1564,7 +1667,7 @@ export function VibeCraftApp() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
                   {term.category}
                 </p>
-                <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink">
+                <h3 className="type-title mt-2 text-ink">
                   {term.term}
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
@@ -1610,11 +1713,11 @@ export function VibeCraftApp() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
                   {prompt.category}
                 </p>
-                <h3 className="mt-2 text-lg font-black tracking-[-0.025em] text-ink">
+                <h3 className="type-title mt-2 text-ink">
                   {prompt.title}
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
-                <pre className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap border border-ink bg-ink p-4 text-xs leading-6 text-surface">
+                <pre className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-ink bg-ink p-4 text-xs leading-6 text-surface">
                   {prompt.template}
                 </pre>
                 <SecondaryButton
@@ -1663,10 +1766,10 @@ export function VibeCraftApp() {
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-danger">
                 분석 결과
               </p>
-              <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink">
+              <h3 className="type-title mt-2 text-ink">
                 {errorSolution.summary}
               </h3>
-              <h4 className="mt-7 text-sm font-bold text-ink">가능성이 높은 원인</h4>
+              <h4 className="type-label mt-7 text-ink">가능성이 높은 원인</h4>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
                 {errorSolution.possibleCauses.map((item) => (
                   <li className="flex gap-3" key={item}>
@@ -1675,7 +1778,7 @@ export function VibeCraftApp() {
                   </li>
                 ))}
               </ul>
-              <h4 className="mt-7 text-sm font-bold text-ink">확인 순서</h4>
+              <h4 className="type-label mt-7 text-ink">확인 순서</h4>
               <ol className="mt-3">
                 {errorSolution.solutionSteps.map((item, index) => (
                   <li
@@ -1809,39 +1912,20 @@ export function VibeCraftApp() {
         overallProgress={projectProgress.percent}
         progress={projectProgress.phases}
       />
-      <div className="min-h-screen lg:pt-16">
-        <PhaseRail
-          activePhase={safePhase}
-          onSelect={navigatePhase}
-          progress={projectProgress.phases}
-        />
-        <main className="min-w-0 pb-28 lg:pb-16">
-          <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-            <div className="hidden">
-              <div>
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
-                  {phaseMetadata[safePhase].step} / {phaseMetadata[safePhase].label}
-                </p>
-                {recommendation && safePhase !== "start" ? (
-                  <p className="mt-2 max-w-2xl line-clamp-1 text-sm font-bold text-ink">
-                    {recommendation.summary}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-sm font-bold text-ink">
-                    아이디어에서 배포까지, 한 번에 한 단계씩
-                  </p>
-                )}
-              </div>
-              <div className="w-full sm:w-56">
-                <ProgressBar value={projectProgress.percent} />
-              </div>
-            </div>
-
-            {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+      <PhaseRail
+        activePhase={safePhase}
+        onSelect={navigatePhase}
+        overallProgress={projectProgress.percent}
+        progress={projectProgress.phases}
+      />
+      <main className="min-w-0 pb-36 lg:pb-16 lg:pl-[280px]">
+        <div className="mx-auto max-w-[1120px] px-4 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+          {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+          <div className="phase-enter" key={safePhase}>
             {phaseContent}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       <ResourceDock onOpen={setResource} />
 

@@ -37,6 +37,23 @@ const roleHints: Record<Role, string> = {
   adult: "빠른 실행과 업무 적용",
 };
 
+const roleThemes: Record<Role, string> = {
+  student: "tile-blue",
+  teacher: "tile-violet",
+  adult: "tile-amber",
+};
+
+const roleLayouts: Record<Role, string> = {
+  student: "md:col-span-5",
+  teacher: "md:col-span-4",
+  adult: "md:col-span-3",
+};
+
+const startModeThemes: Record<StartMode, string> = {
+  plan: "tile-cyan",
+  idea: "tile-violet",
+};
+
 const statusLabels: Record<ChecklistStatus, string> = {
   pending: "대기",
   active: "진행 중",
@@ -49,6 +66,13 @@ const statusClasses: Record<ChecklistStatus, string> = {
   active: "border-signal/30 bg-signal-soft text-signal-ink",
   done: "border-success/30 bg-success/10 text-success",
   blocked: "border-warning/30 bg-warning/10 text-warning",
+};
+
+const taskRowClasses: Record<ChecklistStatus, string> = {
+  pending: "border-line bg-surface",
+  active: "border-signal/30 bg-signal-soft/60 shadow-soft",
+  done: "border-success/30 bg-success/5",
+  blocked: "border-warning/30 bg-warning/5",
 };
 
 export const resourceMetadata: Record<
@@ -95,7 +119,7 @@ export function RoleSelector({
   role: Role | null;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="stagger mt-4 grid grid-cols-1 gap-3 md:grid-cols-12">
       {roleOptions.map((option) => {
         const selected = role === option.id;
         const Icon = roleIcons[option.id];
@@ -103,25 +127,24 @@ export function RoleSelector({
           <button
             aria-pressed={selected}
             className={
-              "relative flex min-h-20 items-center gap-3 rounded-[1.125rem] border-2 px-4 py-3 text-left transition-all " +
-              (selected ? "border-signal bg-surface text-ink shadow-soft" : "border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
+              `semantic-tile ${roleThemes[option.id]} ${roleLayouts[option.id]} relative flex min-h-24 items-center gap-3 rounded-[1.25rem] px-4 py-4 text-left text-ink hover:-translate-y-1 hover:shadow-soft`
             }
             key={option.id}
             onClick={() => onChange(option.id)}
             type="button"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[0.875rem] bg-signal-soft text-signal"><Icon className="h-5 w-5" /></span>
+            <span className="semantic-icon grid h-11 w-11 shrink-0 place-items-center rounded-[0.875rem]"><Icon className="h-5 w-5" /></span>
             <span>
-              <span className="block text-sm font-bold">{option.title}</span>
+              <span className="type-title block">{option.title}</span>
               <span
                 className={
-                  "mt-0.5 block text-[11px] text-muted"
+                  "type-label mt-0.5 block text-muted"
                 }
               >
                 {roleHints[option.id]}
               </span>
             </span>
-            {selected ? <CheckCircle2 className="absolute right-3 top-3 h-5 w-5 text-signal" /> : null}
+            {selected ? <CheckCircle2 className="semantic-check absolute right-3 top-3 h-5 w-5" /> : null}
           </button>
         );
       })}
@@ -161,8 +184,8 @@ export function StartModePicker({
 
   return (
     <div>
-      <p className="text-sm font-bold text-ink">어떻게 시작할까요?</p>
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <p className="type-title text-ink">어떻게 시작할까요?</p>
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12">
         {options.map((option) => {
           const selected = option.id === mode;
           const Icon = option.icon;
@@ -170,21 +193,20 @@ export function StartModePicker({
             <button
               aria-pressed={selected}
               className={
-                "relative min-h-36 rounded-[1.125rem] border-2 bg-surface p-5 text-left transition-all " +
-                (selected ? "border-signal shadow-soft" : "border-line hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
+                `semantic-tile ${startModeThemes[option.id]} ${option.id === "plan" ? "md:col-span-7" : "md:col-span-5"} relative min-h-40 rounded-[1.25rem] p-5 text-left hover:-translate-y-1 hover:shadow-soft sm:p-6`
               }
               key={option.id}
               onClick={() => onChange(option.id)}
               type="button"
             >
               <span className="flex items-start justify-between">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-signal-soft text-signal"><Icon className="h-5 w-5" /></span>
-                {selected ? <CheckCircle2 className="h-5 w-5 text-signal" /> : <span className="text-xs font-bold text-muted">{option.number}</span>}
+                <span className="semantic-icon grid h-12 w-12 place-items-center rounded-2xl"><Icon className="h-5 w-5" /></span>
+                {selected ? <CheckCircle2 className="semantic-check h-5 w-5" /> : <span className="type-label text-muted">{option.number}</span>}
               </span>
-              <span className="mt-5 block text-base font-black tracking-[-0.02em] sm:text-lg">
+              <span className="type-title mt-5 block">
                 {option.title}
               </span>
-              <span className="mt-1 block text-xs leading-5 text-muted">
+              <span className="type-body mt-1 block text-muted">
                 {option.description}
               </span>
             </button>
@@ -198,16 +220,16 @@ export function StartModePicker({
 export function JourneySketch() {
   return (
     <aside className="hidden xl:block">
-      <div className="hud-panel sticky top-24 overflow-hidden rounded-[1.25rem] p-6">
+      <div className="hud-panel sticky top-10 overflow-hidden rounded-[1.5rem] p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-signal-ink">
-              Mission objective
+              현재 목표
             </p>
-            <h2 className="mt-2 text-lg font-black tracking-[-0.02em] text-ink">첫 번째 서비스 공개</h2>
+            <h2 className="type-title mt-2 text-ink">첫 번째 서비스 공개</h2>
           </div>
           <span className="rounded-full border border-signal/20 bg-signal-soft px-2.5 py-1 font-mono text-[10px] font-bold text-signal-ink">
-            LV.01
+            단계 01
           </span>
         </div>
         <div className="mt-6 rounded-2xl border border-line bg-canvas/70 p-4">
@@ -216,7 +238,7 @@ export function JourneySketch() {
               <FileText className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono text-[10px] font-bold text-muted">START</p>
+              <p className="font-mono text-[10px] font-bold text-muted">시작</p>
               <p className="text-sm font-bold text-ink">기획 또는 아이디어</p>
             </div>
           </div>
@@ -226,11 +248,11 @@ export function JourneySketch() {
             <span className="h-px flex-1 bg-line" />
           </div>
           <div className="flex items-center gap-3 rounded-xl bg-ink p-4 text-surface shadow-strong">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal text-white shadow-[0_0_24px_rgba(86,97,166,.55)]">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal text-white shadow-[0_0_24px_rgba(207,92,57,.42)]">
               <Rocket className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono text-[10px] text-surface/60">CLEAR</p>
+              <p className="font-mono text-[10px] text-surface/60">완료 조건</p>
               <p className="text-sm font-black">실제로 열리는 공유 URL</p>
             </div>
           </div>
@@ -265,8 +287,10 @@ export function ShapeTabs({
         <button
           aria-current={activeTab === tab.id ? "page" : undefined}
           className={
-            "relative min-h-10 flex-1 shrink-0 rounded-full px-4 text-center text-sm font-bold transition-all " +
-            (activeTab === tab.id ? "bg-surface text-ink shadow-soft" : "text-muted hover:text-ink")
+            "type-label relative min-h-10 flex-1 shrink-0 rounded-full px-4 text-center transition-all duration-300 " +
+            (activeTab === tab.id
+              ? "bg-surface text-ink shadow-soft"
+              : "text-muted hover:text-ink")
           }
           key={tab.id}
           onClick={() => onChange(tab.id)}
@@ -281,29 +305,43 @@ export function ShapeTabs({
 
 export function BriefList({
   eyebrow,
+  icon: Icon,
   items,
   ordered = false,
+  tone,
   title,
 }: {
   eyebrow: string;
+  icon: LucideIcon;
   items: string[];
   ordered?: boolean;
+  tone: "tile-blue" | "tile-violet" | "tile-cyan" | "tile-amber";
   title: string;
 }) {
   const Tag = ordered ? "ol" : "ul";
   return (
-    <section>
-      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-ink">
-        {eyebrow}
-      </p>
-      <h3 className="mt-2 text-lg font-black tracking-[-0.025em] text-ink">{title}</h3>
-      <Tag className="mt-4">
+    <section className={`semantic-tile ${tone} rounded-[1.25rem] p-5 sm:p-6`}>
+      <div className="flex items-center gap-3">
+        <span className="semantic-icon grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+            {eyebrow}
+          </p>
+          <h3 className="type-title mt-1 text-ink">{title}</h3>
+        </div>
+      </div>
+      <Tag className="mt-5 space-y-2">
         {items.map((item, index) => (
-          <li className="grid grid-cols-[28px_minmax(0,1fr)] border-t border-line py-3" key={item}>
-            <span className="font-mono text-[10px] text-muted">
+          <li
+            className="brief-list-item grid grid-cols-[32px_minmax(0,1fr)] items-start gap-2 rounded-xl px-3 py-3"
+            key={item}
+          >
+            <span className="semantic-icon grid h-6 w-6 place-items-center rounded-lg font-mono text-[9px] font-bold">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <span className="text-sm font-semibold leading-6 text-ink">{item}</span>
+            <span className="type-body font-semibold leading-6 text-ink">{item}</span>
           </li>
         ))}
       </Tag>
@@ -334,19 +372,19 @@ export function MissionCard({
   status: ChecklistStatus;
 }) {
   return (
-    <article className="relative overflow-hidden rounded-[1.25rem] bg-ink px-5 py-7 text-surface shadow-strong before:absolute before:-right-24 before:-top-24 before:h-64 before:w-64 before:rounded-full before:bg-signal/30 before:blur-3xl sm:px-8 sm:py-9">
+    <article className="relative overflow-hidden rounded-[1.75rem] bg-ink px-5 py-7 text-surface shadow-strong before:absolute before:-right-24 before:-top-24 before:h-64 before:w-64 before:rounded-full before:bg-signal/30 before:blur-3xl sm:px-8 sm:py-9">
       <div className="relative z-10">
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal">
           지금 할 한 가지 · {statusLabels[status]}
         </p>
-        <h2 className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-[-0.03em] sm:text-4xl">
+        <h2 className="type-display mt-4 max-w-3xl">
           {item.title}
         </h2>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-surface/65">{item.description}</p>
+        <p className="type-body mt-4 max-w-2xl text-surface/65">{item.description}</p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           {status !== "active" ? (
             <button
-              className="action-button border border-signal bg-signal text-white hover:bg-signal-ink"
+              className="action-button border border-signal bg-signal text-white shadow-[0_12px_30px_rgba(207,92,57,.35)] hover:bg-signal-ink"
               onClick={onStart}
               type="button"
             >
@@ -388,7 +426,12 @@ export function TaskRow({
   status: ChecklistStatus;
 }) {
   return (
-    <article className="mt-3 grid gap-4 rounded-2xl border border-line bg-surface p-4 transition-shadow hover:shadow-soft sm:grid-cols-[44px_minmax(0,1fr)_156px] sm:items-center">
+    <article
+      className={
+        "mt-3 grid gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-soft sm:grid-cols-[44px_minmax(0,1fr)_156px] sm:items-center " +
+        taskRowClasses[status]
+      }
+    >
       <span
         className={
           "grid h-9 w-9 place-items-center rounded-xl border text-[10px] font-semibold " +
@@ -398,8 +441,8 @@ export function TaskRow({
         {status === "done" ? <Check className="h-4 w-4" /> : status === "active" ? <Play className="h-3.5 w-3.5" /> : status === "blocked" ? <Hand className="h-4 w-4" /> : <Circle className="h-3.5 w-3.5" />}
       </span>
       <div>
-        <h3 className="text-sm font-bold text-ink">{item.title}</h3>
-        <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+        <h3 className="type-title text-ink">{item.title}</h3>
+        <p className="type-body mt-1 text-muted">{item.description}</p>
       </div>
       <label>
         <span className="sr-only">{item.title} 상태</span>
@@ -432,7 +475,7 @@ export function ProjectEmptyState({
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-signal-soft text-signal">
           <FileText className="h-5 w-5" />
         </span>
-        <h1 className="mt-6 text-3xl font-black tracking-[-0.03em] text-ink">
+        <h1 className="type-display mt-6 text-ink">
           아직 프로젝트 브리프가 없습니다.
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted">{description}</p>
@@ -452,7 +495,7 @@ export function ResourceDock({
   return (
     <button
       aria-label="프로젝트 코치 열기"
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_8px_24px_rgba(86,97,166,.35)] transition-all hover:-translate-y-0.5 hover:bg-signal-ink lg:bottom-6 lg:right-6"
+      className="fixed bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.5rem)] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_10px_28px_rgba(207,92,57,.32)] transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:scale-[1.02] hover:bg-signal-ink active:scale-[.98] lg:bottom-6 lg:right-6"
       onClick={() => onOpen("coach")}
       type="button"
     >

@@ -63,7 +63,7 @@ export function ProgressBar({
         className="h-2 overflow-hidden rounded-full bg-line"
         role="progressbar"
       >
-        <div className="h-full rounded-full bg-gradient-to-r from-signal to-success shadow-[0_0_12px_rgba(86,97,166,.45)] transition-[width] duration-300" style={{ width: `${safeValue}%` }} />
+        <div className="h-full rounded-full bg-signal shadow-[0_0_14px_rgba(207,92,57,.32)] transition-[width] duration-500" style={{ width: `${safeValue}%` }} />
       </div>
     </div>
   );
@@ -72,53 +72,84 @@ export function ProgressBar({
 export function PhaseRail({
   activePhase,
   onSelect,
+  overallProgress,
   progress,
 }: {
   activePhase: PhaseId;
   onSelect: (phase: PhaseId) => void;
+  overallProgress: number;
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-40 hidden h-16 border-b border-line bg-surface/85 px-6 shadow-[0_8px_30px_rgba(26,28,35,.04)] backdrop-blur-xl lg:block">
-      <div className="mx-auto grid h-full max-w-[1280px] grid-cols-[190px_minmax(0,1fr)_190px] items-center gap-6">
-        <BrandLockup compact />
-        <nav aria-label="프로젝트 진행 단계" className="mx-auto flex items-center gap-1 rounded-full bg-canvas p-1">
-          {phaseOrder.map((phaseId) => {
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-line bg-surface/85 backdrop-blur-xl lg:flex">
+      <div className="px-6 pb-7 pt-8">
+        <BrandLockup />
+      </div>
+      <nav aria-label="프로젝트 진행 단계" className="min-h-0 flex-1 overflow-y-auto px-4">
+        <p className="px-3 pb-4 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">
+          Mission Route
+        </p>
+        <ol className="space-y-1">
+          {phaseOrder.map((phaseId, index) => {
             const phase = phaseMetadata[phaseId];
             const active = activePhase === phaseId;
             const done = progress[phaseId].percent === 100;
             return (
-              <button
-                aria-current={active ? "step" : undefined}
-                className={`flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all ${
-                  active ? "bg-surface text-ink shadow-[0_4px_18px_rgba(86,97,166,.18)]" : done ? "text-success" : "text-muted opacity-60 hover:opacity-100"
-                }`}
-                key={phaseId}
-                onClick={() => onSelect(phaseId)}
-                type="button"
-              >
-                <span
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+              <li className="relative" key={phaseId}>
+                {index < phaseOrder.length - 1 ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-0 left-[27px] top-12 w-px bg-line"
+                  />
+                ) : null}
+                <button
+                  aria-current={active ? "step" : undefined}
+                  className={`relative flex w-full items-start gap-3 rounded-2xl px-3 py-3.5 text-left transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                     active
-                      ? "bg-signal text-white"
-                      : done
-                        ? "bg-success text-white"
-                        : "bg-line text-muted"
+                      ? "bg-signal-soft ring-1 ring-signal/20 shadow-soft"
+                      : "hover:bg-canvas"
                   }`}
+                  onClick={() => onSelect(phaseId)}
+                  type="button"
                 >
-                  {done && !active ? <Check className="h-3.5 w-3.5" /> : Number(phase.step)}
-                </span>
-                <span>{phase.label}</span>
-              </button>
+                  <span
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-full font-mono text-[11px] font-bold transition-colors duration-300 ${
+                      active
+                        ? "bg-signal text-white shadow-[0_6px_18px_rgba(207,92,57,.35)]"
+                        : done
+                          ? "border border-success/40 bg-success/15 text-success"
+                          : "border border-line bg-canvas text-muted"
+                    }`}
+                  >
+                    {done && !active ? <Check className="h-3.5 w-3.5" /> : phase.step}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block text-sm font-bold ${active ? "text-ink" : done ? "text-success" : "text-muted"}`}>
+                      {phase.label}
+                    </span>
+                    <span className="mt-0.5 block font-mono text-[10px] font-semibold text-muted">
+                      {progress[phaseId].total > 0
+                        ? `${progress[phaseId].completed}/${progress[phaseId].total} · ${progress[phaseId].percent}%`
+                        : `${progress[phaseId].percent}%`}
+                    </span>
+                  </span>
+                  {active ? (
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-signal shadow-[0_0_12px_currentColor]" />
+                  ) : null}
+                </button>
+              </li>
             );
           })}
-        </nav>
-        <div className="flex items-center justify-end gap-2 text-xs font-semibold text-success" aria-live="polite">
+        </ol>
+      </nav>
+      <div className="border-t border-line px-6 py-6">
+        <ProgressBar value={overallProgress} />
+        <div className="mt-5 flex items-center gap-2 text-[11px] font-semibold text-success" aria-live="polite">
           <Cloud className="h-4 w-4" />
           자동 저장됐어요
         </div>
       </div>
-    </header>
+    </aside>
   );
 }
 
@@ -134,14 +165,25 @@ export function MobilePhaseNav({
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
-      <div className="flex items-center justify-between">
-        <BrandLockup compact />
-        <span className="font-mono text-[10px] font-semibold text-muted">
-          전체 <strong className="text-ink">{overallProgress}%</strong>
-        </span>
-      </div>
-      <nav aria-label="프로젝트 진행 단계" className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-canvas p-1">
+    <>
+      <header className="sticky top-0 z-30 border-b border-line bg-surface/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
+        <div className="flex items-center justify-between">
+          <BrandLockup compact />
+          <span className="font-mono text-[10px] font-semibold text-muted">
+            전체 <strong className="text-ink">{overallProgress}%</strong>
+          </span>
+        </div>
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-line">
+          <div
+            className="h-full rounded-full bg-signal shadow-[0_0_10px_rgba(207,92,57,.35)] transition-[width] duration-500"
+            style={{ width: `${overallProgress}%` }}
+          />
+        </div>
+      </header>
+      <nav
+        aria-label="프로젝트 진행 단계"
+        className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface/95 p-1.5 shadow-drawer backdrop-blur-xl lg:hidden"
+      >
         {phaseOrder.map((phaseId) => {
           const phase = phaseMetadata[phaseId];
           const active = activePhase === phaseId;
@@ -149,22 +191,28 @@ export function MobilePhaseNav({
           return (
             <button
               aria-current={active ? "step" : undefined}
-              className={`min-h-9 min-w-0 rounded-full px-1 text-center text-[11px] font-bold transition-colors ${
-                active ? "bg-surface text-ink shadow-soft" : done ? "text-success" : "text-muted opacity-60"
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-center transition-all duration-300 ${
+                active
+                  ? "bg-signal-soft text-ink shadow-soft"
+                  : done
+                    ? "text-success"
+                    : "text-muted"
               }`}
               key={phaseId}
               onClick={() => onSelect(phaseId)}
               type="button"
             >
-              <span className="block truncate">{done && !active ? "✓ " : ""}{phase.label}</span>
+              <span
+                className={`font-mono text-[9px] font-bold ${active ? "text-signal-ink" : ""}`}
+              >
+                {done && !active ? <Check className="h-3 w-3" /> : phase.step}
+              </span>
+              <span className="block w-full truncate text-[11px] font-bold">{phase.label}</span>
             </button>
           );
         })}
       </nav>
-      <div className="mt-3 h-1 overflow-hidden rounded-full bg-line">
-        <div className="h-full rounded-full bg-gradient-to-r from-signal to-success" style={{ width: `${overallProgress}%` }} />
-      </div>
-    </header>
+    </>
   );
 }
 
@@ -181,9 +229,15 @@ export function PrimaryButton({
   ...props
 }: ActionButtonProps) {
   return (
-    <button className={`action-button action-button--primary ${className}`} {...props}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : Icon ? <Icon className="h-4 w-4" /> : null}
+    <button className={`action-button action-button--primary group ${className}`} {...props}>
       <span>{children}</span>
+      <span className="-mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/20 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5">
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : Icon ? (
+          <Icon className="h-3.5 w-3.5" />
+        ) : null}
+      </span>
     </button>
   );
 }
@@ -205,7 +259,10 @@ export function SecondaryButton({
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="inline-flex min-h-7 items-center rounded-full border border-signal/15 bg-signal-soft px-3 text-[11px] font-extrabold text-signal-ink shadow-sm">{children}</p>
+    <p className="inline-flex min-h-7 items-center gap-2 rounded-full border border-signal/20 bg-signal-soft px-3.5 text-[11px] font-bold uppercase tracking-[0.15em] text-signal-ink shadow-sm">
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_8px_currentColor]" />
+      {children}
+    </p>
   );
 }
 
@@ -221,8 +278,8 @@ export function SectionHeading({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 className="text-xl font-extrabold tracking-[-0.02em] text-ink">{title}</h2>
-        {description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{description}</p> : null}
+        <h2 className="type-title text-ink">{title}</h2>
+        {description ? <p className="type-body mt-2 max-w-2xl text-muted">{description}</p> : null}
       </div>
       {action}
     </div>
@@ -307,7 +364,7 @@ export function ResourceDrawer({
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-5 sm:px-7">
           <div>
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal-ink">{eyebrow}</p>
-            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-ink" id="resource-drawer-title">
+            <h2 className="type-title mt-1 text-ink" id="resource-drawer-title">
               {title}
             </h2>
           </div>
