@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { anthropicErrorPayload, generateClaudeJson } from "@/lib/anthropic";
+import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
 import { errorSolutionOutputJsonSchema, projectCoachSystemPrompt } from "@/lib/ai-schemas";
 
 const schema = z.object({
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await generateClaudeJson({
+    const result = await generateAiJson({
       system: projectCoachSystemPrompt,
       prompt: `다음 개발 오류를 초보자가 해결할 수 있도록 분석하세요.
 오류 메시지에 없는 사실을 확정하지 말고 가능성이 높은 순서로 점검하게 하세요.
@@ -57,9 +57,11 @@ ${parsed.data.errorMessage}
       maxTokens: 2500,
       outputSchema: errorSolutionOutputJsonSchema,
     });
-    return NextResponse.json(responseSchema.parse(result));
+    return NextResponse.json(responseSchema.parse(result.data), {
+      headers: { "x-ai-provider": result.provider },
+    });
   } catch (error) {
-    const failure = anthropicErrorPayload(error);
+    const failure = aiErrorPayload(error);
     return NextResponse.json({ error: failure.error }, { status: failure.status });
   }
 }

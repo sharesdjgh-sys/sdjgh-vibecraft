@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { anthropicErrorPayload, generateClaudeJson } from "@/lib/anthropic";
+import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
 import { chatOutputJsonSchema, projectCoachSystemPrompt } from "@/lib/ai-schemas";
 
 const schema = z.object({
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await generateClaudeJson({
+    const result = await generateAiJson({
       system: projectCoachSystemPrompt,
       prompt: `현재 프로젝트 맥락을 바탕으로 사용자의 질문에 짧고 실행 가능하게 답하세요.
 확실하지 않은 내용은 단정하지 말고, 비밀키나 DB 주소를 공유하지 않도록 안내하세요.
@@ -50,9 +50,11 @@ relatedLinks에는 실습 체크리스트, 용어 사전, 프롬프트 템플릿
       maxTokens: 1500,
       outputSchema: chatOutputJsonSchema,
     });
-    return NextResponse.json(responseSchema.parse(result));
+    return NextResponse.json(responseSchema.parse(result.data), {
+      headers: { "x-ai-provider": result.provider },
+    });
   } catch (error) {
-    const failure = anthropicErrorPayload(error);
+    const failure = aiErrorPayload(error);
     return NextResponse.json({ error: failure.error }, { status: failure.status });
   }
 }

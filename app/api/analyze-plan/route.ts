@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { anthropicErrorPayload, generateClaudeJson } from "@/lib/anthropic";
+import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
 import {
   projectCoachSystemPrompt,
   recommendationJsonShape,
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await generateClaudeJson({
+    const result = await generateAiJson({
       system: projectCoachSystemPrompt,
       prompt: `다음 기획서를 분석해 프로젝트 브리프를 작성하세요.
 
@@ -42,10 +42,10 @@ ${parsed.data.extractedText}
       maxTokens: 8000,
       outputSchema: recommendationOutputJsonSchema,
     });
-    const recommendation = recommendationResponseSchema.parse(result);
-    return NextResponse.json(recommendation);
+    const recommendation = recommendationResponseSchema.parse(result.data);
+    return NextResponse.json(recommendation, { headers: { "x-ai-provider": result.provider } });
   } catch (error) {
-    const failure = anthropicErrorPayload(error);
+    const failure = aiErrorPayload(error);
     return NextResponse.json({ error: failure.error }, { status: failure.status });
   }
 }

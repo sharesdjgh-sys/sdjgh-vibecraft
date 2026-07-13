@@ -1,5 +1,3 @@
-import { ZodError } from "zod";
-
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-5";
 
@@ -107,20 +105,4 @@ export async function generateClaudeJson(input: {
 
   if (!text) throw new AnthropicApiError("Claude가 비어 있는 응답을 반환했습니다.");
   return jsonFromText(text);
-}
-
-export function anthropicErrorPayload(error: unknown) {
-  if (error instanceof AnthropicApiError) {
-    return { error: error.message, status: error.status };
-  }
-  if (error instanceof ZodError) {
-    const fields = Array.from(new Set(error.issues.map((issue) => issue.path.join(".")).filter(Boolean)))
-      .slice(0, 3)
-      .join(", ");
-    return {
-      error: `Claude 응답의 일부 형식이 올바르지 않습니다${fields ? ` (${fields})` : ""}. 다시 시도해주세요.`,
-      status: 502,
-    };
-  }
-  return { error: "AI 처리 중 예상하지 못한 오류가 발생했습니다.", status: 500 };
 }
