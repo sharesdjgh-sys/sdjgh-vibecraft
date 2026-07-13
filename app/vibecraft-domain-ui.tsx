@@ -2,15 +2,19 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   Bot,
+  Briefcase,
   Check,
+  CheckCircle2,
+  Circle,
   ClipboardList,
   FileText,
   GraduationCap,
+  Hand,
   Lightbulb,
   Play,
+  Presentation,
   Rocket,
-  School,
-  UserRound,
+  MessageCircle,
   Wrench,
 } from "lucide-react";
 import { roleOptions } from "@/lib/vibecraft-data";
@@ -23,8 +27,8 @@ export type ShapeTab = "brief" | "tool" | "service";
 
 const roleIcons: Record<Role, LucideIcon> = {
   student: GraduationCap,
-  teacher: School,
-  adult: UserRound,
+  teacher: Presentation,
+  adult: Briefcase,
 };
 
 const roleHints: Record<Role, string> = {
@@ -37,14 +41,14 @@ const statusLabels: Record<ChecklistStatus, string> = {
   pending: "대기",
   active: "진행 중",
   done: "완료",
-  blocked: "막힘",
+  blocked: "막힘 · 도움받기",
 };
 
 const statusClasses: Record<ChecklistStatus, string> = {
-  pending: "border-line bg-surface text-muted",
-  active: "border-signal/40 bg-signal-soft text-ink",
-  done: "border-success/40 bg-success/10 text-success",
-  blocked: "border-danger/40 bg-danger/10 text-danger",
+  pending: "border-line bg-canvas text-muted",
+  active: "border-signal/30 bg-signal-soft text-signal-ink",
+  done: "border-success/30 bg-success/10 text-success",
+  blocked: "border-warning/30 bg-warning/10 text-warning",
 };
 
 export const resourceMetadata: Record<
@@ -79,7 +83,7 @@ export const resourceMetadata: Record<
     title: "프로젝트 코치",
     eyebrow: "현재 문맥으로 질문",
     short: "코치",
-    icon: Bot,
+    icon: MessageCircle,
   },
 };
 
@@ -91,7 +95,7 @@ export function RoleSelector({
   role: Role | null;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-3 gap-px border border-line bg-line">
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
       {roleOptions.map((option) => {
         const selected = role === option.id;
         const Icon = roleIcons[option.id];
@@ -99,24 +103,25 @@ export function RoleSelector({
           <button
             aria-pressed={selected}
             className={
-              "flex min-h-16 flex-col items-center justify-center gap-1 px-2 py-2 text-center transition-colors sm:flex-row sm:gap-3 sm:px-4 sm:py-3 sm:text-left " +
-              (selected ? "bg-ink text-surface" : "bg-surface text-ink hover:bg-signal-soft")
+              "relative flex min-h-20 items-center gap-3 rounded-[1.125rem] border-2 px-4 py-3 text-left transition-all " +
+              (selected ? "border-signal bg-surface text-ink shadow-soft" : "border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
             }
             key={option.id}
             onClick={() => onChange(option.id)}
             type="button"
           >
-            <Icon className={"h-4 w-4 " + (selected ? "text-signal" : "text-muted")} />
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[0.875rem] bg-signal-soft text-signal"><Icon className="h-5 w-5" /></span>
             <span>
               <span className="block text-sm font-bold">{option.title}</span>
               <span
                 className={
-                  "mt-0.5 hidden text-[11px] sm:block " + (selected ? "text-surface/60" : "text-muted")
+                  "mt-0.5 block text-[11px] text-muted"
                 }
               >
                 {roleHints[option.id]}
               </span>
             </span>
+            {selected ? <CheckCircle2 className="absolute right-3 top-3 h-5 w-5 text-signal" /> : null}
           </button>
         );
       })}
@@ -156,8 +161,8 @@ export function StartModePicker({
 
   return (
     <div>
-      <p className="text-sm font-bold text-ink">출발점을 선택하세요.</p>
-      <div className="mt-4 grid grid-cols-2 gap-px border border-line bg-line">
+      <p className="text-sm font-bold text-ink">어떻게 시작할까요?</p>
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map((option) => {
           const selected = option.id === mode;
           const Icon = option.icon;
@@ -165,21 +170,21 @@ export function StartModePicker({
             <button
               aria-pressed={selected}
               className={
-                "min-h-28 p-3 text-left transition-colors sm:min-h-32 sm:p-4 " +
-                (selected ? "bg-signal text-ink" : "bg-surface text-ink hover:bg-signal-soft")
+                "relative min-h-36 rounded-[1.125rem] border-2 bg-surface p-5 text-left transition-all " +
+                (selected ? "border-signal shadow-soft" : "border-line hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
               }
               key={option.id}
               onClick={() => onChange(option.id)}
               type="button"
             >
               <span className="flex items-start justify-between">
-                <span className="font-mono text-xs font-bold">{option.number}</span>
-                <Icon className="h-4 w-4" />
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-signal-soft text-signal"><Icon className="h-5 w-5" /></span>
+                {selected ? <CheckCircle2 className="h-5 w-5 text-signal" /> : <span className="text-xs font-bold text-muted">{option.number}</span>}
               </span>
-              <span className="mt-5 block text-base font-black tracking-[-0.03em] sm:mt-6 sm:text-lg">
+              <span className="mt-5 block text-base font-black tracking-[-0.02em] sm:text-lg">
                 {option.title}
               </span>
-              <span className={"mt-1 hidden text-xs sm:block " + (selected ? "text-ink/65" : "text-muted")}>
+              <span className="mt-1 block text-xs leading-5 text-muted">
                 {option.description}
               </span>
             </button>
@@ -192,32 +197,40 @@ export function StartModePicker({
 
 export function JourneySketch() {
   return (
-    <aside className="hidden 2xl:block">
-      <div className="sticky top-12 border-y border-line py-7">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
-          이 프로젝트의 완료 기준
-        </p>
-        <div className="mt-7 border border-line bg-surface p-5">
+    <aside className="hidden xl:block">
+      <div className="hud-panel sticky top-24 overflow-hidden rounded-[1.25rem] p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-signal-ink">
+              Mission objective
+            </p>
+            <h2 className="mt-2 text-lg font-black tracking-[-0.02em] text-ink">첫 번째 서비스 공개</h2>
+          </div>
+          <span className="rounded-full border border-signal/20 bg-signal-soft px-2.5 py-1 font-mono text-[10px] font-bold text-signal-ink">
+            LV.01
+          </span>
+        </div>
+        <div className="mt-6 rounded-2xl border border-line bg-canvas/70 p-4">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center border border-line bg-canvas text-muted">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-surface text-muted shadow-sm">
               <FileText className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono text-[10px] text-muted">INPUT</p>
+              <p className="font-mono text-[10px] font-bold text-muted">START</p>
               <p className="text-sm font-bold text-ink">기획 또는 아이디어</p>
             </div>
           </div>
           <div className="my-5 flex items-center gap-3" aria-hidden="true">
             <span className="h-px flex-1 bg-line" />
-            <span className="font-mono text-xs font-black text-signal-ink">→</span>
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-signal-soft font-mono text-xs font-black text-signal-ink">↓</span>
             <span className="h-px flex-1 bg-line" />
           </div>
-          <div className="flex items-center gap-3 bg-signal p-4 text-ink">
-            <span className="grid h-10 w-10 place-items-center bg-ink text-surface">
+          <div className="flex items-center gap-3 rounded-xl bg-ink p-4 text-surface shadow-strong">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal text-white shadow-[0_0_24px_rgba(86,97,166,.55)]">
               <Rocket className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono text-[10px]">OUTPUT</p>
+              <p className="font-mono text-[10px] text-surface/60">CLEAR</p>
               <p className="text-sm font-black">실제로 열리는 공유 URL</p>
             </div>
           </div>
@@ -225,6 +238,10 @@ export function JourneySketch() {
         <p className="mt-5 text-xs leading-6 text-muted">
           다른 사람이 링크를 열고 핵심 행동을 한 번 성공하면 첫 버전은 완성입니다.
         </p>
+        <div className="mt-5 flex items-center gap-2 border-t border-line pt-4 text-xs font-bold text-success">
+          <CheckCircle2 className="h-4 w-4" />
+          진행 내용은 자동 저장돼요
+        </div>
       </div>
     </aside>
   );
@@ -243,23 +260,19 @@ export function ShapeTabs({
     { id: "service", label: "서비스 형태", number: "03" },
   ];
   return (
-    <nav aria-label="설계 세부 단계" className="mt-12 flex gap-6 overflow-x-auto border-b border-line">
+    <nav aria-label="설계 세부 단계" className="mt-10 flex gap-1 overflow-x-auto rounded-full bg-line/60 p-1">
       {tabs.map((tab) => (
         <button
           aria-current={activeTab === tab.id ? "page" : undefined}
           className={
-            "relative shrink-0 pb-3 text-left text-sm font-bold transition-colors " +
-            (activeTab === tab.id ? "text-ink" : "text-muted hover:text-ink")
+            "relative min-h-10 flex-1 shrink-0 rounded-full px-4 text-center text-sm font-bold transition-all " +
+            (activeTab === tab.id ? "bg-surface text-ink shadow-soft" : "text-muted hover:text-ink")
           }
           key={tab.id}
           onClick={() => onChange(tab.id)}
           type="button"
         >
-          <span className="mr-2 font-mono text-[9px] text-signal-ink">{tab.number}</span>
           {tab.label}
-          {activeTab === tab.id ? (
-            <span className="absolute inset-x-0 bottom-[-1px] h-0.5 bg-signal" />
-          ) : null}
         </button>
       ))}
     </nav>
@@ -321,10 +334,10 @@ export function MissionCard({
   status: ChecklistStatus;
 }) {
   return (
-    <article className="bg-ink px-5 py-7 text-surface sm:px-8 sm:py-9">
-      <div>
+    <article className="relative overflow-hidden rounded-[1.25rem] bg-ink px-5 py-7 text-surface shadow-strong before:absolute before:-right-24 before:-top-24 before:h-64 before:w-64 before:rounded-full before:bg-signal/30 before:blur-3xl sm:px-8 sm:py-9">
+      <div className="relative z-10">
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal">
-          다음 작업 · {statusLabels[status]}
+          지금 할 한 가지 · {statusLabels[status]}
         </p>
         <h2 className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-[-0.03em] sm:text-4xl">
           {item.title}
@@ -333,7 +346,7 @@ export function MissionCard({
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           {status !== "active" ? (
             <button
-              className="action-button border border-signal bg-signal text-ink hover:bg-surface"
+              className="action-button border border-signal bg-signal text-white hover:bg-signal-ink"
               onClick={onStart}
               type="button"
             >
@@ -350,12 +363,12 @@ export function MissionCard({
             완료했어요
           </button>
           <button
-            className="action-button border border-surface/25 bg-transparent text-surface hover:border-danger hover:bg-danger/20"
+            className="action-button border border-warning/60 bg-transparent text-surface hover:bg-warning/20"
             onClick={onBlocked}
             type="button"
           >
-            <Wrench className="h-4 w-4" />
-            막혔어요
+            <Hand className="h-4 w-4" />
+            막힘 · 도움받기
           </button>
         </div>
       </div>
@@ -375,14 +388,14 @@ export function TaskRow({
   status: ChecklistStatus;
 }) {
   return (
-    <article className="grid gap-4 border-b border-line py-5 sm:grid-cols-[44px_minmax(0,1fr)_132px] sm:items-center">
+    <article className="mt-3 grid gap-4 rounded-2xl border border-line bg-surface p-4 transition-shadow hover:shadow-soft sm:grid-cols-[44px_minmax(0,1fr)_156px] sm:items-center">
       <span
         className={
-          "grid h-9 w-9 place-items-center border font-mono text-[10px] font-semibold " +
+          "grid h-9 w-9 place-items-center rounded-xl border text-[10px] font-semibold " +
           statusClasses[status]
         }
       >
-        {status === "done" ? <Check className="h-4 w-4" /> : String(index + 1).padStart(2, "0")}
+        {status === "done" ? <Check className="h-4 w-4" /> : status === "active" ? <Play className="h-3.5 w-3.5" /> : status === "blocked" ? <Hand className="h-4 w-4" /> : <Circle className="h-3.5 w-3.5" />}
       </span>
       <div>
         <h3 className="text-sm font-bold text-ink">{item.title}</h3>
@@ -391,7 +404,7 @@ export function TaskRow({
       <label>
         <span className="sr-only">{item.title} 상태</span>
         <select
-          className={"min-h-11 w-full border px-3 text-xs font-bold " + statusClasses[status]}
+          className={"min-h-11 w-full rounded-xl border px-3 text-xs font-bold " + statusClasses[status]}
           onChange={(event) => onChange(event.target.value as ChecklistStatus)}
           value={status}
         >
@@ -414,9 +427,9 @@ export function ProjectEmptyState({
   onAction: () => void;
 }) {
   return (
-    <section className="grid min-h-[60vh] place-items-center border-y border-line py-16 text-center">
+    <section className="grid min-h-[60vh] place-items-center rounded-[1.25rem] border border-line bg-surface px-6 py-16 text-center shadow-soft">
       <div className="max-w-xl">
-        <span className="mx-auto grid h-12 w-12 place-items-center bg-signal text-ink">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-signal-soft text-signal">
           <FileText className="h-5 w-5" />
         </span>
         <h1 className="mt-6 text-3xl font-black tracking-[-0.03em] text-ink">
@@ -438,12 +451,12 @@ export function ResourceDock({
 }) {
   return (
     <button
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 inline-flex min-h-12 items-center gap-2 border border-ink bg-ink px-4 text-sm font-bold text-surface shadow-drawer transition-colors hover:border-signal hover:bg-signal hover:text-ink lg:bottom-5 lg:right-5"
+      aria-label="프로젝트 코치 열기"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_8px_24px_rgba(86,97,166,.35)] transition-all hover:-translate-y-0.5 hover:bg-signal-ink lg:bottom-6 lg:right-6"
       onClick={() => onOpen("coach")}
       type="button"
     >
-      <Bot className="h-4 w-4" />
-      도움 도구
+      <MessageCircle className="h-6 w-6" />
     </button>
   );
 }

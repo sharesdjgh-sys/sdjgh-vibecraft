@@ -40,9 +40,9 @@ const config: Config = {
         ],
       },
       boxShadow: {
-        soft: "none",
-        strong: "0 24px 64px rgba(25, 24, 21, 0.18)",
-        drawer: "0 24px 64px rgba(25, 24, 21, 0.18)",
+        soft: "0 12px 32px rgba(86, 97, 166, 0.10)",
+        strong: "0 20px 56px rgba(26, 28, 35, 0.16)",
+        drawer: "0 24px 64px rgba(26, 28, 35, 0.16)",
       },
     },
   },

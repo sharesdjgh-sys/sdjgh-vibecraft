@@ -497,6 +497,7 @@ export function VibeCraftApp() {
       scrollToTop();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "프로젝트 브리프를 만들지 못했습니다.");
+      scrollToTop();
     } finally {
       setBusy(null);
     }
@@ -716,10 +717,10 @@ export function VibeCraftApp() {
 
   function renderStartPhase() {
     return (
-      <section className="grid gap-12 2xl:grid-cols-[minmax(0,1fr)_340px] 2xl:gap-20">
-        <div className="max-w-3xl">
+      <section className="grid w-full min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <div>
           <Eyebrow>새 프로젝트 · 01</Eyebrow>
-          <h1 className="mt-4 max-w-3xl text-4xl font-black leading-[1.1] tracking-[-0.035em] text-ink sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
             기획을 멈추지 말고,
             <br />
             실제 서비스로 만드세요.
@@ -730,7 +731,7 @@ export function VibeCraftApp() {
           </p>
 
           {recommendation ? (
-            <div className="mt-8 flex flex-col gap-3 border-l-2 border-success bg-success/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-success/20 bg-success/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold text-success">진행 중인 프로젝트</p>
                 <p className="mt-1 line-clamp-1 text-sm font-semibold text-ink">
@@ -747,7 +748,7 @@ export function VibeCraftApp() {
             </div>
           ) : null}
 
-          <div className="mt-10 border-t border-line pt-7">
+          <div className="hud-panel relative mt-10 rounded-[1.25rem] p-5 sm:p-6">
             <p className="text-sm font-bold text-ink">누구의 상황에 맞춰 설명할까요?</p>
             <p className="mt-1 text-xs leading-5 text-muted">
               역할은 추천의 말투와 예시를 바꿉니다. 언제든 다시 선택할 수 있습니다.
@@ -755,7 +756,7 @@ export function VibeCraftApp() {
             <RoleSelector role={role} onChange={handleRoleChange} />
           </div>
 
-          <div className="mt-10">
+          <div className="hud-panel relative mt-6 rounded-[1.25rem] p-5 sm:p-6">
             <StartModePicker mode={startMode} onChange={setStartMode} />
             {startMode === "plan" ? (
               <div className="mt-6">
@@ -765,9 +766,9 @@ export function VibeCraftApp() {
                     txt·md는 바로 읽습니다. PDF는 파일명만 불러오므로 핵심 요약을 함께
                     붙여넣어주세요.
                   </span>
-                  <span className="mb-3 flex min-h-28 cursor-pointer flex-col items-start justify-between gap-4 border border-dashed border-line bg-surface px-4 py-4 transition-colors hover:border-signal hover:bg-signal-soft focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-signal sm:flex-row sm:items-center">
+                  <span className="mb-3 flex min-h-28 cursor-pointer flex-col items-start justify-between gap-4 rounded-2xl border-2 border-dashed border-line bg-canvas px-4 py-4 transition-colors hover:border-signal hover:bg-signal-soft focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-signal sm:flex-row sm:items-center">
                     <span className="flex min-w-0 items-center gap-3">
-                      <span className="grid h-10 w-10 place-items-center bg-ink text-surface">
+                      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-signal-soft text-signal">
                         <Upload className="h-4 w-4" />
                       </span>
                       <span>
@@ -898,7 +899,7 @@ export function VibeCraftApp() {
     return (
       <section>
         <Eyebrow>프로젝트 설계 · 02</Eyebrow>
-        <h1 className="mt-4 max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+        <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
           만들 수 있는 크기로
           <br />
           프로젝트를 다듬습니다.
@@ -977,7 +978,7 @@ export function VibeCraftApp() {
                 </div>
               </div>
             ) : (
-              <div className="mt-8 grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <div>
                   <blockquote className="max-w-3xl text-2xl font-extrabold leading-10 tracking-[-0.035em] text-ink sm:text-3xl sm:leading-[1.45]">
                     “{recommendation.summary}”
@@ -996,7 +997,7 @@ export function VibeCraftApp() {
                     />
                   </div>
                 </div>
-                <aside className="border-l border-line pl-6">
+                <aside className="rounded-2xl bg-canvas p-5">
                   <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
                     현재 결정
                   </p>
@@ -1055,13 +1056,13 @@ export function VibeCraftApp() {
               description="화려한 결과보다 현재 프로젝트를 끝까지 다루기 좋은 도구를 고릅니다."
               title="빌드 파트너 선택"
             />
-            <div className="mt-6 border-l-2 border-signal bg-signal-soft px-4 py-3">
+            <div className="mt-6 rounded-xl border border-signal/20 bg-signal-soft px-4 py-3">
               <p className="text-xs font-bold text-signal-ink">
                 추천 · {recommendedToolInfo.name}
               </p>
               <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[1]}</p>
             </div>
-            <div className="mt-4 border-b border-line">
+            <div className="mt-4 space-y-3">
               {tools.map((tool, index) => {
                 const selected = selectedTool === tool.slug;
                 const recommended = recommendation.recommendedTool === tool.slug;
@@ -1069,8 +1070,8 @@ export function VibeCraftApp() {
                 return (
                   <div
                     className={
-                      "border-t border-line transition-colors " +
-                      (selected ? "bg-ink text-surface" : "bg-transparent text-ink")
+                      "overflow-hidden rounded-[1.125rem] border-2 transition-all " +
+                      (selected ? "border-signal bg-ink text-surface shadow-soft" : "border-line bg-surface text-ink hover:border-signal")
                     }
                     key={tool.slug}
                   >
@@ -1163,13 +1164,13 @@ export function VibeCraftApp() {
               description="사용 환경을 기준으로 결과물의 형태와 필요한 화면을 결정합니다."
               title="서비스 형태 선택"
             />
-            <div className="mt-6 border-l-2 border-signal bg-signal-soft px-4 py-3">
+            <div className="mt-6 rounded-xl border border-signal/20 bg-signal-soft px-4 py-3">
               <p className="text-xs font-bold text-signal-ink">
                 추천 · {recommendedServiceInfo.title}
               </p>
               <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[0]}</p>
             </div>
-            <div className="mt-6 grid gap-px overflow-hidden border border-line bg-line lg:grid-cols-3">
+            <div className="mt-6 grid gap-3 lg:grid-cols-3">
               {serviceTypes.map((service, index) => {
                 const selected = selectedServiceType === service.id;
                 const recommended = recommendation.recommendedServiceType === service.id;
@@ -1178,10 +1179,10 @@ export function VibeCraftApp() {
                   <button
                     aria-pressed={selected}
                     className={
-                      "min-h-64 p-6 text-left transition-colors " +
+                      "min-h-64 rounded-[1.125rem] border-2 p-6 text-left transition-all " +
                       (selected
-                        ? "bg-signal text-ink"
-                        : "bg-surface text-ink hover:bg-signal-soft")
+                        ? "border-signal bg-surface text-ink shadow-soft"
+                        : "border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-signal hover:shadow-soft")
                     }
                     key={service.id}
                     onClick={() => selectServiceType(service.id)}
@@ -1192,7 +1193,7 @@ export function VibeCraftApp() {
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       {selected ? (
-                        <span className="grid h-7 w-7 place-items-center bg-ink text-surface">
+                        <span className="grid h-7 w-7 place-items-center rounded-full bg-signal text-white">
                           <Check className="h-4 w-4" />
                         </span>
                       ) : recommended ? (
@@ -1284,7 +1285,7 @@ export function VibeCraftApp() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Eyebrow>실제 제작 · 03</Eyebrow>
-            <h1 className="mt-4 max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+            <h1 className="mt-4 text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
               오늘 필요한 한 단계에만
               <br />
               집중하세요.
@@ -1308,7 +1309,7 @@ export function VibeCraftApp() {
               status={checklistStatuses[currentMission.id] ?? "pending"}
             />
           ) : (
-            <div className="border-y border-success bg-success/10 px-5 py-8 sm:px-8">
+            <div className="rounded-[1.25rem] border border-success/20 bg-success/10 px-5 py-8 sm:px-8">
               <CheckCircle2 className="h-8 w-8 text-success" />
               <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
                 제작 체크리스트를 모두 완료했습니다.
@@ -1380,9 +1381,9 @@ export function VibeCraftApp() {
     return (
       <section>
         <Eyebrow>세상에 공개 · 04</Eyebrow>
-        <div className="mt-4 grid gap-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-end">
+        <div className="mt-4 grid gap-8 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-end">
           <div>
-            <h1 className="max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.03em] text-ink sm:text-4xl">
+            <h1 className="text-[2rem] font-black leading-[1.35] tracking-[-0.02em] text-ink">
               링크를 공유할 수 있을 때
               <br />
               프로젝트는 비로소 완성됩니다.
@@ -1403,7 +1404,7 @@ export function VibeCraftApp() {
         </div>
 
         {ready ? (
-          <div className="mt-10 border-y border-success bg-success/10 px-5 py-8 sm:px-8 sm:py-10">
+          <div className="mt-10 rounded-[1.25rem] border border-success/20 bg-success/10 px-5 py-8 sm:px-8 sm:py-10">
             <Flag className="h-8 w-8 text-success" />
             <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] text-ink">
               서비스가 세상에 나왔습니다.
@@ -1454,7 +1455,7 @@ export function VibeCraftApp() {
               ))}
             </div>
           </div>
-          <aside className="xl:border-l xl:border-line xl:pl-7">
+          <aside className="rounded-[1.25rem] border border-line bg-surface p-6 shadow-soft">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-ink">
               최종 산출물
             </p>
@@ -1801,22 +1802,22 @@ export function VibeCraftApp() {
   const activeResourceMeta = resource ? resourceMetadata[resource] : null;
 
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className="game-shell min-h-screen text-ink">
       <MobilePhaseNav
         activePhase={safePhase}
         onSelect={navigatePhase}
         overallProgress={projectProgress.percent}
         progress={projectProgress.phases}
       />
-      <div className="flex min-h-screen">
+      <div className="min-h-screen lg:pt-16">
         <PhaseRail
           activePhase={safePhase}
           onSelect={navigatePhase}
           progress={projectProgress.phases}
         />
-        <main className="min-w-0 flex-1 pb-28 lg:pb-0">
-          <div className="mx-auto max-w-[1180px] px-4 py-7 sm:px-8 sm:py-10 lg:px-10 xl:px-14 xl:py-12">
-            <div className="mb-10 hidden flex-col gap-5 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between lg:flex">
+        <main className="min-w-0 pb-28 lg:pb-16">
+          <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+            <div className="hidden">
               <div>
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
                   {phaseMetadata[safePhase].step} / {phaseMetadata[safePhase].label}

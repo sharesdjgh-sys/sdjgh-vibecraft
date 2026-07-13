@@ -5,19 +5,18 @@
 :root {
   color-scheme: light;
 
-  /* VibeCraft v3: a quiet, paper-like digital workbench. */
-  --color-canvas: 246 243 235;
-  --color-surface: 255 254 250;
-  --color-ink: 25 24 21;
-  --color-muted: 103 100 93;
-  --color-line: 215 209 196;
-  --color-signal: 242 85 44;
-  --color-signal-ink: 195 58 24;
-  --color-signal-soft: 255 232 222;
-  --color-control-line: 148 143 132;
-  --color-success: 47 109 78;
-  --color-warning: 154 91 20;
-  --color-danger: 179 58 50;
+  --color-canvas: 244 245 249;
+  --color-surface: 255 255 255;
+  --color-ink: 26 28 35;
+  --color-muted: 106 112 128;
+  --color-line: 227 229 238;
+  --color-signal: 86 97 166;
+  --color-signal-ink: 65 75 135;
+  --color-signal-soft: 231 234 244;
+  --color-control-line: 211 214 225;
+  --color-success: 62 142 117;
+  --color-warning: 201 143 69;
+  --color-danger: 180 85 83;
 
   --font-sans: "Noto Sans KR Variable", "Pretendard Variable", Pretendard,
     "SUIT Variable", SUIT, "Wanted Sans Variable", "Wanted Sans", "Noto Sans KR",
@@ -40,6 +39,15 @@
   box-sizing: border-box;
 }
 
+main,
+section,
+article,
+aside,
+nav,
+.grid > * {
+  min-width: 0;
+}
+
 html {
   min-width: 320px;
   scroll-behavior: smooth;
@@ -57,9 +65,53 @@ body {
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.65;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.game-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 12% 8%, rgb(var(--color-signal) / 0.12), transparent 27rem),
+    radial-gradient(circle at 92% 32%, rgb(var(--color-success) / 0.08), transparent 24rem),
+    rgb(var(--color-canvas));
+}
+
+.game-shell::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(var(--color-signal) / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--color-signal) / 0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+  content: "";
+  pointer-events: none;
+}
+
+.hud-panel {
+  border: 1px solid rgb(var(--color-line));
+  background: rgb(var(--color-surface) / 0.88);
+  box-shadow:
+    0 18px 50px rgb(var(--color-ink) / 0.07),
+    inset 0 1px 0 rgb(255 255 255 / 0.8);
+  backdrop-filter: blur(16px);
+}
+
+.hud-panel::after {
+  position: absolute;
+  top: -1px;
+  left: 1.5rem;
+  width: 4rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgb(var(--color-signal));
+  content: "";
 }
 
 ::selection {
@@ -105,8 +157,8 @@ samp {
   .field {
     width: 100%;
     min-height: 2.75rem;
-    border: 1px solid rgb(var(--color-control-line));
-    border-radius: 0.625rem;
+    border: 1.5px solid rgb(var(--color-control-line));
+    border-radius: 0.875rem;
     background: rgb(var(--color-surface));
     padding: 0.6875rem 0.875rem;
     color: rgb(var(--color-ink));
@@ -153,8 +205,8 @@ samp {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.625rem;
-    padding: 0.625rem 0.9375rem;
+    border-radius: 0.875rem;
+    padding: 0.625rem 1.125rem;
     font-size: 0.875rem;
     font-weight: 700;
     line-height: 1.25rem;
@@ -163,7 +215,10 @@ samp {
       border-color 160ms ease,
       background-color 160ms ease,
       color 160ms ease,
-      opacity 160ms ease;
+      opacity 160ms ease,
+      transform 160ms ease,
+      box-shadow 160ms ease;
+    white-space: nowrap;
   }
 
   .action-button:active:not(:disabled),
@@ -180,20 +235,22 @@ samp {
   }
 
   .action-button--primary {
-    border: 1px solid rgb(var(--color-ink));
-    background: rgb(var(--color-ink));
-    color: rgb(var(--color-surface));
+    border: 1px solid rgb(var(--color-signal));
+    background: rgb(var(--color-signal));
+    color: white;
+    box-shadow: 0 8px 24px rgb(var(--color-signal) / 0.28);
   }
 
   .action-button--primary:hover:not(:disabled) {
-    border-color: rgb(var(--color-signal));
-    background: rgb(var(--color-signal));
-    color: rgb(var(--color-ink));
+    border-color: rgb(var(--color-signal-ink));
+    background: rgb(var(--color-signal-ink));
+    color: white;
+    transform: translateY(-1px);
   }
 
   .action-button--secondary,
   .nav-button {
-    border: 1px solid rgb(var(--color-line));
+    border: 1.5px solid rgb(var(--color-line));
     background: rgb(var(--color-surface));
     color: rgb(var(--color-ink));
   }
@@ -210,7 +267,7 @@ samp {
     min-height: 2.75rem;
     place-items: center;
     border: 1px solid rgb(var(--color-line));
-    border-radius: 0.625rem;
+    border-radius: 0.875rem;
     background: rgb(var(--color-surface));
     color: rgb(var(--color-ink));
     padding: 0.625rem;
@@ -228,8 +285,9 @@ samp {
 
   .surface-panel {
     border: 1px solid rgb(var(--color-line));
-    border-radius: 0.75rem;
+    border-radius: 1.125rem;
     background: rgb(var(--color-surface));
+    box-shadow: 0 12px 32px rgb(var(--color-ink) / 0.05);
   }
 
   .section-label {

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { buildRecommendation } from "@/lib/recommendation";
+import { anthropicErrorPayload, generateClaudeJson } from "@/lib/anthropic";
+import {
+  projectCoachSystemPrompt,
+  recommendationJsonShape,
+  recommendationOutputJsonSchema,
+  recommendationResponseSchema,
+} from "@/lib/ai-schemas";
 
 const schema = z.object({
   role: z.enum(["student", "teacher", "adult"]),
@@ -19,10 +25,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const recommendation = buildRecommendation({
-    role: parsed.data.role,
-    text: parsed.data.extractedText,
-  });
+  try {
+    const result = await generateClaudeJson({
+      system: projectCoachSystemPrompt,
+      prompt: `다음 기획서를 분석해 프로젝트 브리프를 작성하세요.
 
-  return NextResponse.json(recommendation);
+사용자 역할: ${parsed.data.role}
+
+반드시 다음 JSON 구조와 키를 그대로 사용하세요:
+${recommendationJsonShape}
+
+기획서:
+<plan>
+${parsed.data.extractedText}
+</plan>`,
+      maxTokens: 8000,
+      outputSchema: recommendationOutputJsonSchema,
+    });
+    const recommendation = recommendationResponseSchema.parse(result);
+    return NextResponse.json(recommendation);
+  } catch (error) {
+    const failure = anthropicErrorPayload(error);
+    return NextResponse.json({ error: failure.error }, { status: failure.status });
+  }
 }

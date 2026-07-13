@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Check, Loader2, X } from "lucide-react";
+import { ArrowRight, Check, Cloud, Loader2, X } from "lucide-react";
 import {
   phaseMetadata,
   phaseOrder,
@@ -20,10 +20,9 @@ export function CraftMark({ className = "h-10 w-10" }: { className?: string }) {
       viewBox="0 0 44 44"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M6.5 5.5h20l11 11v22h-31z" fill="currentColor" />
-      <path d="M26.5 5.5v11h11" stroke="rgb(var(--color-canvas))" strokeWidth="2" />
-      <path d="M13 28h16" stroke="rgb(var(--color-signal))" strokeWidth="3" />
-      <path d="m25 23 5 5-5 5" stroke="rgb(var(--color-signal))" strokeLinecap="square" strokeWidth="3" />
+      <rect width="44" height="44" rx="14" fill="rgb(var(--color-signal))" />
+      <path d="M12.5 14.5h12l7 7v9h-19z" fill="none" stroke="white" strokeWidth="2.2" />
+      <path d="M24.5 14.5v7h7M17 26h9m-3-3 3 3-3 3" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
     </svg>
   );
 }
@@ -33,12 +32,10 @@ export function BrandLockup({ compact = false }: { compact?: boolean }) {
     <div className="flex items-center gap-3">
       <CraftMark className={compact ? "h-8 w-8" : "h-10 w-10"} />
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
-          Plan → Build
-        </p>
         <p className={`${compact ? "text-base" : "text-xl"} font-extrabold tracking-[-0.035em] text-ink`}>
           VibeCraft
         </p>
+        {!compact ? <p className="text-[11px] font-semibold text-muted">아이디어를 완성까지</p> : null}
       </div>
     </div>
   );
@@ -63,10 +60,10 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={safeValue}
-        className="h-1.5 overflow-hidden bg-line"
+        className="h-2 overflow-hidden rounded-full bg-line"
         role="progressbar"
       >
-        <div className="h-full bg-signal transition-[width] duration-300" style={{ width: `${safeValue}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-signal to-success shadow-[0_0_12px_rgba(86,97,166,.45)] transition-[width] duration-300" style={{ width: `${safeValue}%` }} />
       </div>
     </div>
   );
@@ -82,10 +79,10 @@ export function PhaseRail({
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <aside className="hidden w-[232px] shrink-0 border-r border-line bg-canvas lg:flex lg:min-h-screen lg:flex-col">
-      <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
-        <BrandLockup />
-        <nav aria-label="프로젝트 진행 단계" className="mt-12 space-y-1">
+    <header className="fixed inset-x-0 top-0 z-40 hidden h-16 border-b border-line bg-surface/85 px-6 shadow-[0_8px_30px_rgba(26,28,35,.04)] backdrop-blur-xl lg:block">
+      <div className="mx-auto grid h-full max-w-[1280px] grid-cols-[190px_minmax(0,1fr)_190px] items-center gap-6">
+        <BrandLockup compact />
+        <nav aria-label="프로젝트 진행 단계" className="mx-auto flex items-center gap-1 rounded-full bg-canvas p-1">
           {phaseOrder.map((phaseId) => {
             const phase = phaseMetadata[phaseId];
             const active = activePhase === phaseId;
@@ -93,44 +90,35 @@ export function PhaseRail({
             return (
               <button
                 aria-current={active ? "step" : undefined}
-                className={`group relative flex w-full gap-3 px-2 py-3 text-left transition-colors ${
-                  active ? "text-ink" : "text-muted hover:text-ink"
+                className={`flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all ${
+                  active ? "bg-surface text-ink shadow-[0_4px_18px_rgba(86,97,166,.18)]" : done ? "text-success" : "text-muted opacity-60 hover:opacity-100"
                 }`}
                 key={phaseId}
                 onClick={() => onSelect(phaseId)}
                 type="button"
               >
                 <span
-                  className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center border font-mono text-[10px] font-semibold ${
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
                     active
-                      ? "border-ink bg-ink text-canvas"
+                      ? "bg-signal text-white"
                       : done
-                        ? "border-success bg-success text-white"
-                        : "border-line bg-surface text-muted"
+                        ? "bg-success text-white"
+                        : "bg-line text-muted"
                   }`}
                 >
-                  {done && !active ? <Check className="h-3.5 w-3.5" /> : phase.step}
+                  {done && !active ? <Check className="h-3.5 w-3.5" /> : Number(phase.step)}
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold">{phase.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-muted">{phase.outcome}</span>
-                  <span className="mt-2 block h-px w-full overflow-hidden bg-line">
-                    <span
-                      className={`block h-full ${active ? "bg-signal" : "bg-ink/35"}`}
-                      style={{ width: `${progress[phaseId].percent}%` }}
-                    />
-                  </span>
-                </span>
+                <span>{phase.label}</span>
               </button>
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-line pt-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">작업 원칙</p>
-          <p className="mt-2 text-xs leading-5 text-muted">한 번에 하나씩. 실제로 끝낸 작업만 진행률에 반영됩니다.</p>
+        <div className="flex items-center justify-end gap-2 text-xs font-semibold text-success" aria-live="polite">
+          <Cloud className="h-4 w-4" />
+          자동 저장됐어요
         </div>
       </div>
-    </aside>
+    </header>
   );
 }
 
@@ -146,14 +134,14 @@ export function MobilePhaseNav({
   progress: Record<PhaseId, PhaseProgress>;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-canvas/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
       <div className="flex items-center justify-between">
         <BrandLockup compact />
         <span className="font-mono text-[10px] font-semibold text-muted">
           전체 <strong className="text-ink">{overallProgress}%</strong>
         </span>
       </div>
-      <nav aria-label="프로젝트 진행 단계" className="mt-3 grid grid-cols-4 gap-1">
+      <nav aria-label="프로젝트 진행 단계" className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-canvas p-1">
         {phaseOrder.map((phaseId) => {
           const phase = phaseMetadata[phaseId];
           const active = activePhase === phaseId;
@@ -161,21 +149,20 @@ export function MobilePhaseNav({
           return (
             <button
               aria-current={active ? "step" : undefined}
-              className={`border-t-2 px-1 pt-2 text-left text-[11px] font-bold transition-colors ${
-                active ? "border-signal text-ink" : done ? "border-success text-muted" : "border-line text-muted"
+              className={`min-h-9 min-w-0 rounded-full px-1 text-center text-[11px] font-bold transition-colors ${
+                active ? "bg-surface text-ink shadow-soft" : done ? "text-success" : "text-muted opacity-60"
               }`}
               key={phaseId}
               onClick={() => onSelect(phaseId)}
               type="button"
             >
-              <span className="font-mono text-[9px] font-medium">{phase.step}</span>
-              <span className="block truncate">{phase.label}</span>
+              <span className="block truncate">{done && !active ? "✓ " : ""}{phase.label}</span>
             </button>
           );
         })}
       </nav>
-      <div className="mt-3 h-px bg-line">
-        <div className="h-full bg-signal" style={{ width: `${overallProgress}%` }} />
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-line">
+        <div className="h-full rounded-full bg-gradient-to-r from-signal to-success" style={{ width: `${overallProgress}%` }} />
       </div>
     </header>
   );
@@ -218,7 +205,7 @@ export function SecondaryButton({
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal-ink">{children}</p>
+    <p className="inline-flex min-h-7 items-center rounded-full border border-signal/15 bg-signal-soft px-3 text-[11px] font-extrabold text-signal-ink shadow-sm">{children}</p>
   );
 }
 
@@ -232,9 +219,9 @@ export function SectionHeading({
   title: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 className="text-2xl font-extrabold tracking-[-0.035em] text-ink">{title}</h2>
+        <h2 className="text-xl font-extrabold tracking-[-0.02em] text-ink">{title}</h2>
         {description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{description}</p> : null}
       </div>
       {action}
@@ -313,7 +300,7 @@ export function ResourceDrawer({
       <div
         aria-labelledby="resource-drawer-title"
         aria-modal="true"
-        className="absolute inset-y-0 right-0 flex w-full max-w-[520px] flex-col border-l border-line bg-surface shadow-drawer"
+        className="absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-line bg-surface shadow-drawer sm:inset-y-0 sm:max-h-none sm:max-w-[520px] sm:rounded-none sm:rounded-l-[1.5rem]"
         ref={panelRef}
         role="dialog"
       >
@@ -336,7 +323,7 @@ export function ResourceDrawer({
 
 export function InlineNotice({ children }: { children: ReactNode }) {
   return (
-    <div aria-live="polite" className="mb-6 border-l-2 border-signal bg-signal-soft px-4 py-3 text-sm leading-6 text-ink">
+    <div aria-live="polite" className="mb-6 rounded-xl border border-signal/20 bg-signal-soft px-4 py-3 text-sm leading-6 text-ink">
       {children}
     </div>
   );
