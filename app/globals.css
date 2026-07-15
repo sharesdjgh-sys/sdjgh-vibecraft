@@ -470,8 +470,8 @@ samp {
       transform: translate3d(-1.5%, 2%, 0) scale(1.08);
     }
 
-    .semantic-tile:hover .semantic-icon,
-    .semantic-tile:focus-within .semantic-icon {
+    .semantic-tile:hover .semantic-icon:not(.semantic-icon-static),
+    .semantic-tile:focus-within .semantic-icon:not(.semantic-icon-static) {
       background: rgb(var(--tile-accent) / 0.18);
       box-shadow: 0 8px 18px rgb(var(--tile-accent) / 0.16);
       transform: translateY(-2px) rotate(-2deg) scale(1.08);

@@ -238,12 +238,14 @@ export function ResourceDrawer({
   onClose,
   open,
   title,
+  wide = false,
 }: {
   children: ReactNode;
   eyebrow: string;
   onClose: () => void;
   open: boolean;
   title: string;
+  wide?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -303,7 +305,10 @@ export function ResourceDrawer({
       <div
         aria-labelledby="resource-drawer-title"
         aria-modal="true"
-        className="absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-line bg-surface shadow-drawer sm:inset-y-0 sm:max-h-none sm:max-w-[520px] sm:rounded-none sm:rounded-l-[1.5rem]"
+        className={
+          "absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-line bg-surface shadow-drawer sm:inset-y-0 sm:max-h-none sm:rounded-none sm:rounded-l-[1.5rem] " +
+          (wide ? "sm:max-w-[820px]" : "sm:max-w-[520px]")
+        }
         ref={panelRef}
         role="dialog"
       >

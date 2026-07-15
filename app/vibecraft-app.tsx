@@ -56,6 +56,7 @@ import type {
   ServiceType,
   ToolSlug,
 } from "@/lib/types";
+import { toolGuides, type ToolGuideTabId } from "@/lib/tool-guides";
 import {
   BriefList,
   JourneySketch,
@@ -152,6 +153,43 @@ const serviceLayouts: Record<ServiceType, string> = {
   web: "lg:col-span-5",
   "mobile-web": "lg:col-span-4",
   software: "lg:col-span-3",
+};
+
+const serviceLearningInfo: Record<
+  ServiceType,
+  {
+    shortFit: string;
+    fits: string[];
+    result: string;
+    strength: string;
+    caution: string;
+    firstStep: string;
+  }
+> = {
+  web: {
+    shortFit: "공유 링크·로그인·데이터 저장이 필요할 때",
+    fits: ["PC와 모바일에서 모두 접속", "여러 사용자가 같은 데이터 이용", "학교 밖에서도 링크로 공유"],
+    result: "설치 없이 브라우저에서 여는 공개 URL",
+    strength: "배포와 업데이트가 쉽고, 사용자에게 새 버전을 다시 설치하게 할 필요가 없습니다.",
+    caution: "로그인, 데이터베이스, API 키가 있다면 서버 보안과 개인정보 처리를 함께 설계해야 합니다.",
+    firstStep: "사용자가 접속해서 핵심 행동을 완료하는 한 개의 화면 흐름부터 만드세요.",
+  },
+  "mobile-web": {
+    shortFit: "스마트폰·카메라·터치 중심 경험이 중요할 때",
+    fits: ["스마트폰에서 자주 사용", "카메라·위치·사진 업로드 활용", "한 손 조작과 큰 버튼이 중요"],
+    result: "모바일 브라우저에서 열고 홈 화면에도 추가할 수 있는 URL",
+    strength: "앱스토어 심사 없이 배포하면서도 앱에 가까운 화면과 조작 경험을 만들 수 있습니다.",
+    caution: "iPhone과 Android의 브라우저 기능 차이, 권한 요청, 작은 화면과 느린 네트워크를 확인해야 합니다.",
+    firstStep: "가장 작은 스마트폰 화면에서 첫 행동과 완료 화면을 먼저 연결하세요.",
+  },
+  software: {
+    shortFit: "파일 처리·반복 업무·로컬 실행이 핵심일 때",
+    fits: ["많은 파일을 한꺼번에 처리", "인터넷 없이 또는 내부 PC에서 사용", "반복 명령과 업무 자동화"],
+    result: "터미널 명령, 설치형 프로그램 또는 내부에서 실행하는 도구",
+    strength: "컴퓨터의 파일과 자원을 직접 활용하기 좋아 대량 처리와 자동화에 유리합니다.",
+    caution: "운영체제별 설치, 업데이트, 실행 권한과 사용자에게 전달할 배포 방식을 따로 준비해야 합니다.",
+    firstStep: "입력 파일 한 개를 받아 결과 파일 한 개를 만드는 가장 작은 실행 흐름부터 만드세요.",
+  },
 };
 
 type ToolSurface = {
@@ -579,6 +617,8 @@ export function VibeCraftApp() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
   const [editingBrief, setEditingBrief] = useState(false);
   const [selectedStackItem, setSelectedStackItem] = useState<string | null>(null);
+  const [activeToolGuide, setActiveToolGuide] = useState<ToolSlug | null>(null);
+  const [activeToolGuideTab, setActiveToolGuideTab] = useState<ToolGuideTabId>("start");
   const [briefDraft, setBriefDraft] = useState({
     summary: "",
     targetUsers: "",
@@ -749,6 +789,25 @@ export function VibeCraftApp() {
       return;
     }
     navigatePhase("build");
+  }
+
+  function advanceShapeStep() {
+    setNotice(null);
+    if (shapeTab === "brief") {
+      setShapeTab("tool");
+      scrollToTop();
+      return;
+    }
+    if (shapeTab === "tool") {
+      if (!selectedTool) {
+        setNotice("추천을 확인한 뒤 이번 프로젝트에 사용할 제작 도구를 직접 선택해주세요.");
+        return;
+      }
+      setShapeTab("service");
+      scrollToTop();
+      return;
+    }
+    startBuild();
   }
 
   function selectServiceType(nextServiceType: ServiceType) {
@@ -1237,17 +1296,35 @@ export function VibeCraftApp() {
       );
     }
 
+    const shapeStepAction =
+      shapeTab === "brief"
+        ? {
+            description: "프로젝트 브리프를 확인했다면 어떤 도구로 만들지 비교해보세요.",
+            label: "제작 도구 선택하기",
+            icon: ArrowRight,
+          }
+        : shapeTab === "tool"
+          ? {
+              description: "제작 도구를 선택했다면 결과물을 어떤 형태로 만들지 결정하세요.",
+              label: "서비스 형태 선택하기",
+              icon: ArrowRight,
+            }
+          : {
+              description: "브리프와 제작 방식을 모두 확인했다면 첫 번째 실제 작업을 시작하세요.",
+              label: "제작 시작하기",
+              icon: Play,
+            };
+
     return (
       <section>
         <Eyebrow>프로젝트 설계 · 02</Eyebrow>
         <h1 className="type-display phase-title mt-4 text-ink">
-          만들 수 있는 크기로
+          무엇을 만들지 정했다면,
           <br />
-          프로젝트를 다듬습니다.
+          이제 만드는 방법을 고릅니다.
         </h1>
         <p className="type-body mt-5 max-w-2xl text-muted">
-          추천은 정답이 아니라 출발점입니다. 프로젝트의 목적을 먼저 확인하고 도구와 구현
-          형태를 직접 결정하세요.
+          핵심 기능을 먼저 정리한 뒤, 프로젝트에 맞는 도구와 구현 순서를 확인하세요.
         </p>
 
         <ShapeTabs activeTab={shapeTab} onChange={setShapeTab} />
@@ -1719,6 +1796,17 @@ export function VibeCraftApp() {
                               공식 학습 문서
                               <BookOpen className="h-3.5 w-3.5" />
                             </a>
+                            <button
+                              className="inline-flex items-center gap-2 rounded-lg border border-signal/25 bg-signal-soft px-4 py-2.5 text-xs font-bold text-signal-ink transition-all hover:-translate-y-0.5 hover:border-signal/50 hover:bg-signal/15 active:scale-[0.98]"
+                              onClick={() => {
+                                setActiveToolGuide(tool.slug);
+                                setActiveToolGuideTab("start");
+                              }}
+                              type="button"
+                            >
+                              전체 사용법 배우기
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </section>
                       </div>
@@ -1757,11 +1845,11 @@ export function VibeCraftApp() {
 
                       <ol className="mt-5 space-y-3">
                         {partner.steps.map((step, index) => (
-                          <li className="grid grid-cols-[24px_minmax(0,1fr)] gap-2.5" key={step}>
-                            <span className="grid h-6 w-6 place-items-center rounded-full bg-surface font-mono text-[10px] font-bold text-signal-ink shadow-sm">
+                          <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3" key={step}>
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-surface font-mono text-xs font-bold text-signal-ink shadow-sm">
                               {index + 1}
                             </span>
-                            <span className="text-xs leading-5 text-ink">{step}</span>
+                            <span className="text-sm leading-6 text-ink">{step}</span>
                           </li>
                         ))}
                       </ol>
@@ -1876,6 +1964,7 @@ export function VibeCraftApp() {
                 const selected = selectedServiceType === service.id;
                 const recommended = recommendation.recommendedServiceType === service.id;
                 const Icon = serviceIcons[service.id];
+                const learning = serviceLearningInfo[service.id];
                 return (
                   <button
                     aria-pressed={selected}
@@ -1911,10 +2000,53 @@ export function VibeCraftApp() {
                     >
                       {service.description}
                     </span>
+                    <span className="mt-5 block border-t border-current/10 pt-4 text-xs font-bold leading-5 text-ink/80">
+                      {learning.shortFit}
+                    </span>
                   </button>
                 );
               })}
             </div>
+
+            <section className={`semantic-tile ${serviceThemes[activeServiceType]} mt-6 rounded-[1.25rem] p-5 sm:p-6`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted">
+                    선택 가이드
+                  </p>
+                  <h3 className="type-title mt-2 text-ink">{selectedServiceInfo.title}은 이런 프로젝트에 맞습니다</h3>
+                </div>
+                <span className="semantic-icon semantic-icon-static inline-flex w-fit items-center rounded-full px-3 py-1.5 text-xs font-bold">
+                  최종 결과 · {serviceLearningInfo[activeServiceType].result}
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <article className="tool-surface-card tool-surface-card--extension rounded-xl border border-line bg-surface/65 p-4">
+                  <p className="text-xs font-bold text-signal-ink">이럴 때 선택하세요</p>
+                  <ul className="mt-3 space-y-2">
+                    {serviceLearningInfo[activeServiceType].fits.map((item) => (
+                      <li className="flex gap-2 text-sm leading-6 text-ink" key={item}>
+                        <Check className="mt-1.5 h-3.5 w-3.5 shrink-0 text-success" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+                <article className="tool-surface-card tool-surface-card--app rounded-xl border border-line bg-surface/65 p-4">
+                  <p className="text-xs font-bold text-signal-ink">가장 큰 장점</p>
+                  <p className="mt-3 text-sm leading-6 text-ink">{serviceLearningInfo[activeServiceType].strength}</p>
+                </article>
+                <article className="tool-surface-card tool-surface-card--web rounded-xl border border-line bg-surface/65 p-4">
+                  <p className="text-xs font-bold text-signal-ink">미리 확인할 점</p>
+                  <p className="mt-3 text-sm leading-6 text-ink">{serviceLearningInfo[activeServiceType].caution}</p>
+                </article>
+                <article className="tool-surface-card tool-surface-card--terminal rounded-xl border border-line bg-surface/65 p-4">
+                  <p className="text-xs font-bold text-signal-ink">첫 번째로 만들 것</p>
+                  <p className="mt-3 text-sm leading-6 text-ink">{serviceLearningInfo[activeServiceType].firstStep}</p>
+                </article>
+              </div>
+            </section>
 
             <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div>
@@ -1953,11 +2085,10 @@ export function VibeCraftApp() {
 
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
           <p className="max-w-xl text-sm leading-6 text-muted">
-            브리프와 제작 방식을 확인했다면 첫 번째 실제 작업을 시작하세요. 이후 선택은 언제든
-            이 화면에서 바꿀 수 있습니다.
+            {shapeStepAction.description} 이후 선택은 언제든 이 화면에서 바꿀 수 있습니다.
           </p>
-          <PrimaryButton icon={Play} onClick={startBuild}>
-            제작 시작하기
+          <PrimaryButton icon={shapeStepAction.icon} onClick={advanceShapeStep}>
+            {shapeStepAction.label}
           </PrimaryButton>
         </div>
       </section>
@@ -2498,6 +2629,9 @@ export function VibeCraftApp() {
           : renderShipPhase();
 
   const activeResourceMeta = resource ? resourceMetadata[resource] : null;
+  const activeGuide = activeToolGuide ? toolGuides[activeToolGuide] : null;
+  const activeGuideContent =
+    activeGuide?.tabs.find((tab) => tab.id === activeToolGuideTab) ?? activeGuide?.tabs[0];
 
   return (
     <div className="game-shell min-h-screen text-ink">
@@ -2535,6 +2669,98 @@ export function VibeCraftApp() {
           <ResourceSwitcher activeResource={resource ?? "coach"} onChange={setResource} />
           {notice ? <InlineNotice>{notice}</InlineNotice> : null}
           {renderResource()}
+        </ResourceDrawer>
+      ) : null}
+
+      {activeGuide && activeGuideContent ? (
+        <ResourceDrawer
+          eyebrow="BUILD PARTNER GUIDE"
+          onClose={() => setActiveToolGuide(null)}
+          open={Boolean(activeToolGuide)}
+          title={`${activeGuide.name} 전체 사용법`}
+          wide
+        >
+          <div className="border-b border-line px-5 py-5 sm:px-7">
+            <p className="max-w-2xl text-sm leading-6 text-muted">{activeGuide.description}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <a
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-signal-ink hover:text-signal"
+                href={activeGuide.officialUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                공식 문서
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </div>
+
+          <div className="border-b border-line px-5 py-4 sm:px-7">
+            <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
+              {activeGuide.tabs.map((tab) => (
+                <button
+                  aria-selected={activeGuideContent.id === tab.id}
+                  className={
+                    "shrink-0 rounded-full border px-3.5 py-2 text-xs font-bold transition-all " +
+                    (activeGuideContent.id === tab.id
+                      ? "border-signal bg-signal text-white shadow-sm"
+                      : "border-line bg-surface text-muted hover:border-signal/40 hover:bg-signal-soft hover:text-signal-ink")
+                  }
+                  key={tab.id}
+                  onClick={() => setActiveToolGuideTab(tab.id)}
+                  role="tab"
+                  type="button"
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-y-auto px-5 py-6 sm:px-7 sm:py-8" role="tabpanel">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-signal-ink">
+              {activeGuideContent.label}
+            </p>
+            <h3 className="type-title mt-2 text-ink">{activeGuideContent.summary}</h3>
+
+            <ol className="mt-6 space-y-3">
+              {activeGuideContent.steps.map((step, index) => (
+                <li
+                  className="interactive-card rounded-xl border border-line bg-canvas/70 p-4 sm:p-5"
+                  key={step.title}
+                >
+                  <div className="grid grid-cols-[28px_minmax(0,1fr)] gap-3">
+                    <span className="grid h-7 w-7 place-items-center rounded-lg bg-signal-soft font-mono text-[10px] font-bold text-signal-ink">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-ink">{step.title}</h4>
+                      <p className="mt-1 text-sm leading-6 text-muted">{step.body}</p>
+                      {step.command ? (
+                        <pre className="mt-3 overflow-x-auto rounded-lg bg-ink px-3.5 py-3 text-xs leading-5 text-surface">
+                          <code>{step.command}</code>
+                        </pre>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            {activeGuideContent.tips?.length ? (
+              <aside className="mt-6 rounded-xl border border-signal/20 bg-signal-soft/60 p-4">
+                <p className="text-xs font-bold text-signal-ink">초보자 팁</p>
+                <ul className="mt-2 space-y-2">
+                  {activeGuideContent.tips.map((tip) => (
+                    <li className="flex gap-2 text-xs leading-5 text-ink" key={tip}>
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            ) : null}
+          </div>
         </ResourceDrawer>
       ) : null}
     </div>
