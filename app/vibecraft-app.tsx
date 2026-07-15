@@ -272,6 +272,86 @@ const toolSurfaceIcons: Record<ToolSurface["kind"], LucideIcon> = {
   web: ExternalLink,
 };
 
+const designPartners = [
+  {
+    name: "Claude Design",
+    eyebrow: "대화형 디자인 캔버스",
+    description:
+      "말로 요청하면서 화면 시안, 인터랙티브 프로토타입, 발표 자료를 만들 수 있습니다. 기존 디자인 파일이나 참고 자료를 첨부해 같은 분위기로 발전시키는 데도 적합합니다.",
+    steps: [
+      "만들 화면의 목적, 사용자, 기기, 꼭 필요한 내용을 먼저 적습니다.",
+      "처음부터 완성본을 요구하지 말고 레이아웃 시안 2~3개를 비교합니다.",
+      "간격, 대비, 버튼 위치처럼 수정할 부분을 구체적인 말로 피드백합니다.",
+    ],
+    primaryUrl: "https://claude.ai/design",
+    primaryLabel: "Claude Design 열기",
+    guideUrl: "https://support.claude.com/en/articles/14604416-get-started-with-claude-design",
+    tone: "tile-amber",
+    icon: Pencil,
+  },
+  {
+    name: "Google Stitch",
+    eyebrow: "AI UI 생성·탐색",
+    description:
+      "텍스트 설명이나 참고 이미지를 바탕으로 여러 UI 방향을 빠르게 만들고, 화면 흐름과 프런트엔드 결과로 이어 가는 Google Labs의 디자인 도구입니다.",
+    steps: [
+      "웹인지 모바일인지 정하고, 핵심 화면 한 개부터 요청합니다.",
+      "마음에 드는 결과를 고른 뒤 색상, 밀도, 분위기를 한 번에 하나씩 바꿉니다.",
+      "완성 시안을 개발 도구로 넘기기 전에 반응형과 실제 문구를 점검합니다.",
+    ],
+    primaryUrl: "https://stitch.withgoogle.com/",
+    primaryLabel: "Stitch 시작하기",
+    guideUrl: "https://developers.googleblog.com/en/stitch-a-new-way-to-design-uis/",
+    tone: "tile-blue",
+    icon: Layers3,
+  },
+] as const;
+
+const designResources = [
+  {
+    name: "Builder Josh의 Supanova Design Skill",
+    label: "한국어 랜딩페이지 디자인 규칙",
+    description:
+      "새 랜딩페이지 제작, 기존 페이지 개선, 프리미엄 표현, 완성본 출력에 맞춘 네 가지 SKILL.md를 제공합니다.",
+    usage: [
+      "새 페이지는 taste-skill과 output-skill을 함께 고릅니다.",
+      "기존 페이지 개선은 redesign-skill을 프로젝트에 복사합니다.",
+      "AI에게 해당 SKILL.md를 읽고 디자인을 수정하라고 요청합니다.",
+    ],
+    url: "https://github.com/uxjoseph/supanova-design-skill",
+    command: "기존 페이지 개선 → redesign-skill/SKILL.md",
+    tone: "design-resource-card--coral",
+  },
+  {
+    name: "Awesome Design Skills",
+    label: "다양한 디자인 스킬 탐색",
+    description:
+      "여러 디자인 스타일의 SKILL.md와 사람이 읽는 DESIGN.md를 모아 둔 컬렉션입니다. 원하는 스타일을 찾아 AI 도구에 설치할 수 있습니다.",
+    usage: [
+      "목록에서 minimal, editorial, stitch처럼 원하는 스타일을 고릅니다.",
+      "--dry-run으로 어떤 파일이 생기는지 먼저 확인합니다.",
+      "설치 후 AI에게 새 스킬을 적용해 UI를 만들거나 검토해 달라고 요청합니다.",
+    ],
+    url: "https://github.com/bergside/awesome-design-skills",
+    command: "npx typeui.sh pull <스타일> --dry-run",
+    tone: "design-resource-card--blue",
+  },
+  {
+    name: "getdesign.md",
+    label: "브랜드 DESIGN.md 참고 자료",
+    description:
+      "여러 실제 서비스의 색상, 글꼴, 간격, 컴포넌트 원칙을 분석한 DESIGN.md 카탈로그입니다. 브랜드를 그대로 복제하기보다 시각 언어를 공부하는 자료로 활용합니다.",
+    usage: [
+      "카탈로그에서 프로젝트와 비슷한 업종이나 분위기의 브랜드를 찾습니다.",
+      "DESIGN.md를 내려받거나 요청해 프로젝트 최상위 폴더에 둡니다.",
+      "AI에게 DESIGN.md를 참고하되 로고와 고유 자산은 복제하지 말라고 요청합니다.",
+    ],
+    url: "https://getdesign.md/",
+    command: "DESIGN.md를 프로젝트에 추가 → AI에게 먼저 읽도록 요청",
+    tone: "design-resource-card--green",
+  },
+] as const;
+
 type StackGuide = {
   description: string;
   projectRole: string;
@@ -1592,7 +1672,7 @@ export function VibeCraftApp() {
                               const SurfaceIcon = toolSurfaceIcons[surface.kind];
                               return (
                                 <article
-                                  className="rounded-xl border border-line bg-surface/75 p-4"
+                                  className={`interactive-card tool-surface-card tool-surface-card--${surface.kind} rounded-xl border border-line bg-surface/75 p-4`}
                                   key={surface.title}
                                 >
                                   <div className="flex items-center gap-2">
@@ -1647,6 +1727,135 @@ export function VibeCraftApp() {
                 );
               })}
             </div>
+
+            <section className="mt-16 border-t border-line pt-12">
+              <SectionHeading
+                description="코드를 만들기 전에 화면 방향을 탐색하고, 디자인 규칙을 AI에게 정확히 전달하는 방법을 익힙니다."
+                title="디자인 파트너와 참고 자료"
+              />
+
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                {designPartners.map((partner) => {
+                  const PartnerIcon = partner.icon;
+                  return (
+                    <article
+                      className={`semantic-tile ${partner.tone} rounded-[1.25rem] p-5 text-ink sm:p-6`}
+                      key={partner.name}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                            {partner.eyebrow}
+                          </p>
+                          <h3 className="type-title mt-2">{partner.name}</h3>
+                        </div>
+                        <span className="semantic-icon grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+                          <PartnerIcon className="h-5 w-5" />
+                        </span>
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-muted">{partner.description}</p>
+
+                      <ol className="mt-5 space-y-3">
+                        {partner.steps.map((step, index) => (
+                          <li className="grid grid-cols-[24px_minmax(0,1fr)] gap-2.5" key={step}>
+                            <span className="grid h-6 w-6 place-items-center rounded-full bg-surface font-mono text-[10px] font-bold text-signal-ink shadow-sm">
+                              {index + 1}
+                            </span>
+                            <span className="text-xs leading-5 text-ink">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        <a
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-signal px-3.5 py-2.5 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-signal-ink active:scale-[0.98]"
+                          href={partner.primaryUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {partner.primaryLabel}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                        <a
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface/80 px-3.5 py-2.5 text-xs font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-signal/40 hover:text-signal-ink active:scale-[0.98]"
+                          href={partner.guideUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          공식 사용 가이드
+                          <BookOpen className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="brief-shell mt-5 p-5 sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal-soft text-signal-ink">
+                    <Search className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-signal-ink">
+                      DESIGN REFERENCE LIBRARY
+                    </p>
+                    <h3 className="type-title mt-1 text-ink">AI에게 디자인 감각을 전달하는 자료</h3>
+                  </div>
+                </div>
+
+                <div className="mt-6 divide-y divide-line border-y border-line">
+                  {designResources.map((resource, index) => (
+                    <article
+                      className={`interactive-card design-resource-card ${resource.tone} grid gap-5 rounded-xl border border-transparent px-3 py-6 lg:grid-cols-[48px_minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start`}
+                      key={resource.name}
+                    >
+                      <span className="font-mono text-xs font-bold text-signal-ink">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <p className="text-[11px] font-bold text-muted">{resource.label}</p>
+                        <h4 className="mt-1 text-base font-bold text-ink">{resource.name}</h4>
+                        <p className="mt-2 text-sm leading-6 text-muted">{resource.description}</p>
+                        <a
+                          className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-signal-ink transition-colors hover:text-signal"
+                          href={resource.url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          사이트에서 확인하기
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                      <div>
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.13em] text-muted">
+                          초보자 사용 순서
+                        </p>
+                        <ol className="mt-3 space-y-2.5">
+                          {resource.usage.map((step, stepIndex) => (
+                            <li className="flex gap-2.5 text-xs leading-5 text-ink" key={step}>
+                              <span className="font-mono font-bold text-signal-ink">
+                                {stepIndex + 1}.
+                              </span>
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                        <code className="mt-4 block overflow-x-auto rounded-lg bg-canvas px-3 py-2.5 font-mono text-[11px] text-ink">
+                          {resource.command}
+                        </code>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <p className="mt-5 text-xs leading-5 text-muted">
+                  참고: DESIGN.md는 색상과 구성 원칙을 학습하기 위한 자료입니다. 브랜드의 로고,
+                  사진, 고유 그래픽을 그대로 사용할 권리까지 제공하는 것은 아니므로 공개 전에는
+                  각 브랜드의 사용 조건을 확인하세요.
+                </p>
+              </div>
+            </section>
           </div>
         ) : null}
 

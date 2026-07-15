@@ -195,6 +195,10 @@ body {
   box-shadow:
     0 8px 20px rgb(var(--brief-stat-accent) / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.75);
+  transition:
+    border-color 360ms var(--spring),
+    box-shadow 360ms var(--spring),
+    transform 360ms var(--spring);
 }
 
 .brief-stat::before {
@@ -236,6 +240,19 @@ body {
 .brief-list-item {
   border: 1px solid rgb(var(--tile-accent) / 0.14);
   background: rgb(255 255 255 / 0.55);
+  transition:
+    border-color 360ms var(--spring),
+    background-color 360ms var(--spring),
+    box-shadow 360ms var(--spring),
+    transform 360ms var(--spring);
+}
+
+.interactive-card {
+  transition:
+    border-color 400ms var(--spring),
+    background-color 400ms var(--spring),
+    box-shadow 400ms var(--spring),
+    transform 400ms var(--spring);
 }
 
 .phase-enter {
@@ -381,6 +398,9 @@ samp {
     background: radial-gradient(circle at 100% 0%, rgb(var(--tile-accent) / 0.18), transparent 45%);
     content: "";
     pointer-events: none;
+    transition:
+      opacity 500ms var(--spring),
+      transform 500ms var(--spring);
   }
 
   .semantic-tile > * {
@@ -415,6 +435,10 @@ samp {
   .semantic-icon {
     background: rgb(var(--tile-accent) / 0.12);
     color: rgb(var(--tile-accent));
+    transition:
+      background-color 400ms var(--spring),
+      box-shadow 400ms var(--spring),
+      transform 400ms var(--spring);
   }
 
   .semantic-tile[aria-pressed="true"],
@@ -428,6 +452,58 @@ samp {
 
   .semantic-check {
     color: rgb(var(--tile-accent));
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .semantic-tile:hover,
+    .semantic-tile:focus-within {
+      border-color: rgb(var(--tile-accent) / 0.72);
+      box-shadow:
+        0 22px 46px rgb(var(--tile-accent) / 0.16),
+        inset 0 1px 0 rgb(255 255 255 / 0.72);
+      transform: translateY(-5px) scale(1.006);
+    }
+
+    .semantic-tile:hover::before,
+    .semantic-tile:focus-within::before {
+      opacity: 1;
+      transform: translate3d(-1.5%, 2%, 0) scale(1.08);
+    }
+
+    .semantic-tile:hover .semantic-icon,
+    .semantic-tile:focus-within .semantic-icon {
+      background: rgb(var(--tile-accent) / 0.18);
+      box-shadow: 0 8px 18px rgb(var(--tile-accent) / 0.16);
+      transform: translateY(-2px) rotate(-2deg) scale(1.08);
+    }
+
+    .semantic-tile.is-selected:hover,
+    .semantic-tile.is-selected:focus-within {
+      transform: translateY(-6px) scale(1.006);
+    }
+
+    .brief-stat:hover {
+      border-color: rgb(var(--brief-stat-accent) / 0.5);
+      box-shadow:
+        0 14px 28px rgb(var(--brief-stat-accent) / 0.14),
+        inset 0 1px 0 rgb(255 255 255 / 0.82);
+      transform: translateY(-3px);
+    }
+
+    .brief-list-item:hover {
+      border-color: rgb(var(--tile-accent) / 0.34);
+      background: rgb(255 255 255 / 0.82);
+      box-shadow: 0 10px 22px rgb(var(--tile-accent) / 0.08);
+      transform: translateX(4px);
+    }
+
+    .interactive-card:hover,
+    .interactive-card:focus-within {
+      border-color: rgb(var(--color-signal) / 0.38);
+      background-color: rgb(var(--color-surface));
+      box-shadow: 0 16px 34px rgb(104 66 47 / 0.1);
+      transform: translateY(-4px);
+    }
   }
 
   .field {
@@ -596,6 +672,89 @@ samp {
 
   .safe-area-bottom {
     padding-bottom: max(1rem, var(--safe-area-bottom));
+  }
+}
+
+.design-resource-card--coral {
+  --design-resource-bg: var(--tile-violet);
+  --design-resource-line: var(--tile-violet-line);
+  --design-resource-accent: var(--tile-violet-ink);
+}
+
+.design-resource-card--blue {
+  --design-resource-bg: var(--tile-blue);
+  --design-resource-line: var(--tile-blue-line);
+  --design-resource-accent: var(--tile-blue-ink);
+}
+
+.design-resource-card--green {
+  --design-resource-bg: var(--tile-cyan);
+  --design-resource-line: var(--tile-cyan-line);
+  --design-resource-accent: var(--tile-cyan-ink);
+}
+
+.tool-surface-card--app {
+  --tool-surface-bg: var(--tile-violet);
+  --tool-surface-line: var(--tile-violet-line);
+  --tool-surface-accent: var(--tile-violet-ink);
+}
+
+.tool-surface-card--terminal {
+  --tool-surface-bg: var(--tile-blue);
+  --tool-surface-line: var(--tile-blue-line);
+  --tool-surface-accent: var(--tile-blue-ink);
+}
+
+.tool-surface-card--extension {
+  --tool-surface-bg: var(--tile-cyan);
+  --tool-surface-line: var(--tile-cyan-line);
+  --tool-surface-accent: var(--tile-cyan-ink);
+}
+
+.tool-surface-card--web {
+  --tool-surface-bg: var(--tile-amber);
+  --tool-surface-line: var(--tile-amber-line);
+  --tool-surface-accent: var(--tile-amber-ink);
+}
+
+.tool-surface-card > div:first-child > span {
+  transition:
+    background-color 400ms var(--spring),
+    color 400ms var(--spring),
+    transform 400ms var(--spring);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tool-surface-card:hover,
+  .tool-surface-card:focus-within {
+    border-color: rgb(var(--tool-surface-line));
+    background: rgb(var(--tool-surface-bg) / 0.88);
+    box-shadow:
+      0 16px 32px rgb(var(--tool-surface-accent) / 0.14),
+      inset 0 1px 0 rgb(255 255 255 / 0.72);
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  .tool-surface-card:hover > div:first-child > span,
+  .tool-surface-card:focus-within > div:first-child > span {
+    background: rgb(var(--tool-surface-accent) / 0.16);
+    color: rgb(var(--tool-surface-accent));
+    transform: rotate(-3deg) scale(1.08);
+  }
+
+  .design-resource-card:hover,
+  .design-resource-card:focus-within {
+    border-color: rgb(var(--design-resource-line));
+    background: rgb(var(--design-resource-bg) / 0.82);
+    box-shadow:
+      0 16px 34px rgb(var(--design-resource-accent) / 0.13),
+      inset 0 1px 0 rgb(255 255 255 / 0.7);
+    transform: translateX(4px) translateY(-3px);
+  }
+
+  .design-resource-card:hover > span:first-child,
+  .design-resource-card:focus-within > span:first-child {
+    color: rgb(var(--design-resource-accent));
   }
 }
 
