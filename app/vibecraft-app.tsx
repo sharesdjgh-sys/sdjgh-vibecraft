@@ -124,10 +124,10 @@ const serviceRoadmaps: Record<ServiceType, string[]> = {
   ],
 };
 
-const toolIcons: Record<ToolSlug, LucideIcon> = {
-  codex: Code2,
-  claude: MessageSquare,
-  antigravity: Layers3,
+const toolLogos: Record<ToolSlug, string> = {
+  codex: "/tool-logos/codex.svg",
+  claude: "/tool-logos/claude.ico",
+  antigravity: "/tool-logos/antigravity.ico",
 };
 
 const serviceIcons: Record<ServiceType, LucideIcon> = {
@@ -153,6 +153,246 @@ const serviceLayouts: Record<ServiceType, string> = {
   "mobile-web": "lg:col-span-4",
   software: "lg:col-span-3",
 };
+
+type ToolSurface = {
+  kind: "app" | "terminal" | "extension" | "web";
+  title: string;
+  description: string;
+};
+
+type ToolLearningInfo = {
+  overview: string;
+  beginnerPath: string;
+  installUrl: string;
+  docsUrl: string;
+  installCommand?: string;
+  surfaces: ToolSurface[];
+};
+
+const toolLearningInfo: Record<ToolSlug, ToolLearningInfo> = {
+  codex: {
+    overview:
+      "OpenAI의 코딩 에이전트입니다. 프로젝트 파일을 읽고 수정하며, 명령 실행과 테스트까지 한 흐름으로 도와줍니다.",
+    beginnerPath:
+      "처음에는 Codex 앱이나 IDE 확장에서 변경 내용을 눈으로 검토하며 사용하고, 익숙해지면 CLI로 반복 작업과 자동화를 시도하세요.",
+    installUrl: "https://openai.com/codex/",
+    docsUrl: "https://developers.openai.com/codex/",
+    installCommand: "npm install -g @openai/codex",
+    surfaces: [
+      {
+        kind: "app",
+        title: "Codex 앱",
+        description: "Windows·macOS에서 여러 작업을 나누어 진행하고 코드 변경 내역을 화면으로 검토하기 좋습니다.",
+      },
+      {
+        kind: "terminal",
+        title: "터미널 CLI",
+        description: "프로젝트 폴더에서 codex를 실행합니다. 명령어와 Git에 익숙해질수록 빠르고 자동화하기 좋습니다.",
+      },
+      {
+        kind: "extension",
+        title: "IDE 확장",
+        description: "VS Code, Cursor, Windsurf 계열 편집기 안에서 현재 열어 둔 코드와 함께 사용할 수 있습니다.",
+      },
+      {
+        kind: "web",
+        title: "웹·클라우드",
+        description: "GitHub 저장소를 연결해 브라우저에서 작업을 맡기고, 완료된 결과를 나중에 검토할 수 있습니다.",
+      },
+    ],
+  },
+  claude: {
+    overview:
+      "Anthropic의 Claude Code는 큰 코드베이스와 긴 문서를 이해하면서 계획, 파일 수정, 테스트를 함께 수행하는 코딩 에이전트입니다.",
+    beginnerPath:
+      "터미널이 낯설다면 Claude Desktop의 Code 탭에서 시작하세요. 파일 변경과 미리보기에 익숙해진 뒤 CLI나 IDE 확장으로 옮기면 좋습니다.",
+    installUrl: "https://claude.com/download",
+    docsUrl: "https://code.claude.com/docs/en/overview",
+    installCommand: "npm install -g @anthropic-ai/claude-code",
+    surfaces: [
+      {
+        kind: "app",
+        title: "Claude Desktop",
+        description: "Windows·macOS의 Code 탭에서 프로젝트 폴더를 열고 변경 비교, 터미널, 미리보기를 한 화면에서 사용합니다.",
+      },
+      {
+        kind: "terminal",
+        title: "Claude Code CLI",
+        description: "프로젝트 폴더에서 claude를 실행합니다. 스크립트, 자동화, 세밀한 권한 설정에 적합합니다.",
+      },
+      {
+        kind: "extension",
+        title: "IDE 확장",
+        description: "VS Code와 JetBrains 환경에서 코드 옆에 Claude를 두고 선택 영역과 오류를 바로 전달할 수 있습니다.",
+      },
+      {
+        kind: "web",
+        title: "Claude Code 웹",
+        description: "브라우저에서 원격 작업을 시작하고, 컴퓨터를 닫아도 계속 진행되는 작업을 맡길 수 있습니다.",
+      },
+    ],
+  },
+  antigravity: {
+    overview:
+      "Google의 에이전트형 개발 환경입니다. 전용 IDE와 CLI에서 여러 에이전트가 코드를 만들고 실행 결과를 확인하도록 구성되어 있습니다.",
+    beginnerPath:
+      "처음에는 Antigravity IDE를 설치해 시각적으로 작업하세요. 터미널 흐름이 익숙해지면 agy CLI를 추가하고, 필요한 Google 도구 플러그인만 선택하세요.",
+    installUrl: "https://antigravity.google/download",
+    docsUrl: "https://antigravity.google/docs",
+    installCommand: "irm https://antigravity.google/cli/install.ps1 | iex",
+    surfaces: [
+      {
+        kind: "app",
+        title: "Antigravity IDE",
+        description: "Windows·macOS·Linux용 전용 개발 앱입니다. 에이전트, 편집기, 실행 결과를 한곳에서 다루기 좋습니다.",
+      },
+      {
+        kind: "terminal",
+        title: "Antigravity CLI",
+        description: "설치 후 agy 명령으로 실행합니다. 터미널에서 코드베이스를 직접 다루고 반복 작업을 맡길 때 사용합니다.",
+      },
+      {
+        kind: "extension",
+        title: "플러그인",
+        description: "초기 설정에서 Google 개발 도구용 플러그인을 선택할 수 있습니다. 일반 편집기 확장보다 전용 IDE 사용이 중심입니다.",
+      },
+      {
+        kind: "web",
+        title: "SDK·연동",
+        description: "직접 만든 개발 흐름에 Antigravity 기능을 연결해야 할 때 SDK를 살펴보는 고급 경로입니다.",
+      },
+    ],
+  },
+};
+
+const toolSurfaceIcons: Record<ToolSurface["kind"], LucideIcon> = {
+  app: Layers3,
+  terminal: Terminal,
+  extension: Code2,
+  web: ExternalLink,
+};
+
+type StackGuide = {
+  description: string;
+  projectRole: string;
+  firstStep: string;
+  officialUrl?: string;
+};
+
+function getStackGuide(name: string): StackGuide {
+  const key = name.toLowerCase().replace(/[\s._-]/g, "");
+
+  if (key.includes("nextjs")) {
+    return {
+      description: "React를 기반으로 화면과 서버 기능을 함께 만드는 웹 프레임워크입니다.",
+      projectRole: "페이지 구성, API 연결, 화면 이동처럼 서비스의 전체 뼈대를 담당합니다.",
+      firstStep: "페이지와 컴포넌트의 차이부터 익힌 뒤 간단한 API 경로를 만들어 보세요.",
+      officialUrl: "https://nextjs.org/learn",
+    };
+  }
+  if (key.includes("react")) {
+    return {
+      description: "사용자 입력에 따라 바뀌는 웹 화면을 컴포넌트 단위로 만드는 라이브러리입니다.",
+      projectRole: "촬영 버튼, 결과 미리보기, AI 선택 화면처럼 상태가 변하는 UI를 구현합니다.",
+      firstStep: "컴포넌트, props, useState를 사용해 버튼을 누르면 내용이 바뀌는 화면부터 만들어 보세요.",
+      officialUrl: "https://react.dev/learn",
+    };
+  }
+  if (key.includes("tailwind")) {
+    return {
+      description: "미리 정해진 클래스 조합으로 웹 화면의 디자인을 빠르게 만드는 CSS 도구입니다.",
+      projectRole: "부스 화면의 색상, 간격, 반응형 배치와 인쇄 전 미리보기 디자인을 담당합니다.",
+      firstStep: "여백, 글자 크기, 색상, grid와 반응형 접두사 순서로 익혀 보세요.",
+      officialUrl: "https://tailwindcss.com/docs",
+    };
+  }
+  if (key.includes("framermotion")) {
+    return {
+      description: "React 화면에 자연스러운 등장, 전환, 움직임을 추가하는 애니메이션 라이브러리입니다.",
+      projectRole: "AI 분석 중 로딩, 결과 카드 등장, 감정 캐릭터 전환을 자연스럽게 표현합니다.",
+      firstStep: "motion 요소의 initial, animate, transition 속성으로 페이드 효과부터 만들어 보세요.",
+      officialUrl: "https://motion.dev/docs/react",
+    };
+  }
+  if (key.includes("pyodide")) {
+    return {
+      description: "별도 서버 없이 브라우저 안에서 파이썬 코드를 실행하게 해주는 기술입니다.",
+      projectRole: "이미지 처리나 파이썬 실습 코드를 학생의 브라우저에서 바로 실행할 수 있게 합니다.",
+      firstStep: "Pyodide를 불러온 뒤 짧은 파이썬 문자열을 실행하고 결과를 화면에 출력해 보세요.",
+      officialUrl: "https://pyodide.org/en/stable/usage/index.html",
+    };
+  }
+  if (key.includes("gemini")) {
+    return {
+      description: "텍스트와 이미지를 이해하고 결과를 생성할 수 있는 Google의 생성형 AI API입니다.",
+      projectRole: "촬영 이미지를 분석하거나 퍼스널 컬러·감정 결과를 만드는 AI 기능에 연결합니다.",
+      firstStep: "API 키를 서버 환경 변수에 보관하고, 이미지 한 장을 보내 응답을 받는 흐름부터 연습하세요.",
+      officialUrl: "https://ai.google.dev/gemini-api/docs",
+    };
+  }
+  if (key.includes("openai") || key.includes("chatgpt")) {
+    return {
+      description: "텍스트와 이미지를 처리하는 OpenAI 모델을 서비스에 연결하는 API입니다.",
+      projectRole: "사진 분석 결과 설명, 캐릭터 문구 생성 등 AI 응답이 필요한 기능을 담당합니다.",
+      firstStep: "API 키를 화면 코드에 넣지 말고 서버 API에서 간단한 요청을 보내는 것부터 시작하세요.",
+      officialUrl: "https://platform.openai.com/docs/overview",
+    };
+  }
+  if (key.includes("supabase")) {
+    return {
+      description: "데이터베이스, 로그인, 파일 저장 기능을 한곳에서 제공하는 백엔드 서비스입니다.",
+      projectRole: "촬영 결과, 생성 이미지, 체험 기록을 저장하고 다시 불러오는 역할을 합니다.",
+      firstStep: "테이블 하나를 만들고 데이터를 추가·조회한 뒤 Storage에 이미지 업로드를 연습하세요.",
+      officialUrl: "https://supabase.com/docs/guides/getting-started",
+    };
+  }
+  if (key.includes("typescript")) {
+    return {
+      description: "JavaScript에 데이터 형태를 미리 정하는 타입 기능을 더한 언어입니다.",
+      projectRole: "AI 응답과 화면 데이터의 실수를 개발 중에 발견해 서비스 오류를 줄여줍니다.",
+      firstStep: "문자열과 배열 타입, 객체를 표현하는 type 또는 interface부터 익혀 보세요.",
+      officialUrl: "https://www.typescriptlang.org/docs/handbook/",
+    };
+  }
+  if (key.includes("nodejs")) {
+    return {
+      description: "브라우저 밖에서도 JavaScript를 실행해 서버와 개발 도구를 만들 수 있는 실행 환경입니다.",
+      projectRole: "API 요청 처리, 데이터 저장, 파일 변환처럼 화면 뒤에서 필요한 작업을 담당합니다.",
+      firstStep: "간단한 JavaScript 파일을 실행한 뒤 요청과 응답을 주고받는 서버를 만들어 보세요.",
+      officialUrl: "https://nodejs.org/learn",
+    };
+  }
+  if (key.includes("neondb") || key === "neon") {
+    return {
+      description: "클라우드에서 바로 사용할 수 있는 서버리스 PostgreSQL 데이터베이스입니다.",
+      projectRole: "사용자 입력, 프로젝트 설정, 결과 기록처럼 오래 보관할 데이터를 저장합니다.",
+      firstStep: "프로젝트와 테이블을 만든 뒤 한 행을 추가하고 다시 조회해 보세요.",
+      officialUrl: "https://neon.com/docs/introduction",
+    };
+  }
+  if (key.includes("pwa")) {
+    return {
+      description: "웹 서비스를 스마트폰 앱처럼 설치하고 일부 기능을 오프라인에서도 쓰게 하는 방식입니다.",
+      projectRole: "부스용 태블릿이나 스마트폰 홈 화면에서 서비스를 빠르게 실행할 수 있게 합니다.",
+      firstStep: "웹 앱 매니페스트와 서비스 워커가 각각 어떤 역할을 하는지 먼저 익혀 보세요.",
+      officialUrl: "https://web.dev/learn/pwa",
+    };
+  }
+  if (key.includes("vercel")) {
+    return {
+      description: "웹 프로젝트를 인터넷 주소로 빠르게 배포하고 운영하는 서비스입니다.",
+      projectRole: "완성한 서비스를 설명회 부스의 여러 기기에서 접속할 수 있게 공개합니다.",
+      firstStep: "Git 저장소를 연결해 미리보기 주소를 만들고 환경 변수 설정을 확인해 보세요.",
+      officialUrl: "https://vercel.com/docs",
+    };
+  }
+
+  return {
+    description: `${name}은 이 프로젝트의 특정 기능을 구현하기 위해 추천된 개발 기술입니다.`,
+    projectRole: "기획서의 핵심 기능 중 어떤 부분에 연결되는지 공식 문서의 예제와 함께 확인해 보세요.",
+    firstStep: "설치 방법과 가장 작은 예제를 먼저 실행한 뒤 프로젝트 기능에 한 단계씩 연결하세요.",
+  };
+}
 
 function usePersistentState<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(initialValue);
@@ -258,6 +498,7 @@ export function VibeCraftApp() {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
   const [editingBrief, setEditingBrief] = useState(false);
+  const [selectedStackItem, setSelectedStackItem] = useState<string | null>(null);
   const [briefDraft, setBriefDraft] = useState({
     summary: "",
     targetUsers: "",
@@ -283,6 +524,9 @@ export function VibeCraftApp() {
     selectedServiceType && selectedServiceType !== recommendation?.recommendedServiceType
       ? selectedServiceInfo.stack
       : recommendation?.recommendedStack ?? selectedServiceInfo.stack;
+  const activeStackItem =
+    selectedStackItem && displayedStack.includes(selectedStackItem) ? selectedStackItem : null;
+  const activeStackGuide = activeStackItem ? getStackGuide(activeStackItem) : null;
   const checklistItems = useMemo(() => {
     return activeServiceType === "software"
       ? softwareChecklist
@@ -737,7 +981,7 @@ export function VibeCraftApp() {
       <section className="grid w-full min-w-0 gap-10 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div>
           <Eyebrow>새 프로젝트 · 01</Eyebrow>
-          <h1 className="type-display mt-4 text-ink">
+          <h1 className="type-display mt-4 text-signal-ink">
             기획을 멈추지 말고,
             <br />
             실제 서비스로 만드세요.
@@ -916,7 +1160,7 @@ export function VibeCraftApp() {
     return (
       <section>
         <Eyebrow>프로젝트 설계 · 02</Eyebrow>
-        <h1 className="type-display mt-4 text-ink">
+        <h1 className="type-display phase-title mt-4 text-ink">
           만들 수 있는 크기로
           <br />
           프로젝트를 다듬습니다.
@@ -996,54 +1240,56 @@ export function VibeCraftApp() {
               </div>
             ) : (
               <article className="brief-shell mt-8">
-                <header className="brief-hero px-5 py-7 sm:px-8 sm:py-9">
+                <header className="brief-hero border-b border-line px-5 py-5 sm:px-8 sm:py-6">
                   <div className="relative z-10">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-surface/60">
-                        <FileText className="h-4 w-4 text-signal" />
+                    <div className="flex flex-nowrap items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2 whitespace-nowrap font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-signal-ink" />
                         프로젝트 브리프 // AI 분석
                       </div>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-success/35 bg-success/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-success">
+                      <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-success/35 bg-success/10 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-success">
                         <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_10px_currentColor]" />
                         분석 완료
                       </span>
                     </div>
 
-                    <p className="type-label mt-9 text-signal">핵심 목표</p>
-                    <h2 className="type-display mt-3 max-w-4xl text-surface">
+                    <p className="mt-5 font-mono text-[10px] font-bold tracking-[0.08em] text-signal-ink">
+                      핵심 목표
+                    </p>
+                    <h2 className="brief-summary mt-1.5 text-signal-ink">
                       {recommendation.summary}
                     </h2>
 
-                    <dl className="mt-8 grid gap-2 sm:grid-cols-3">
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
-                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                    <dl className="mt-5 grid gap-2 sm:grid-cols-3">
+                      <div className="brief-stat brief-stat--blue rounded-xl px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
                           핵심 사용자
                         </dt>
-                        <dd className="type-title mt-1 text-surface">
+                        <dd className="mt-1 text-sm font-bold text-ink">
                           {recommendation.targetUsers.length}개 사용자군
                         </dd>
                       </div>
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
-                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                      <div className="brief-stat brief-stat--green rounded-xl px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
                           MVP 범위
                         </dt>
-                        <dd className="type-title mt-1 text-surface">
+                        <dd className="mt-1 text-sm font-bold text-ink">
                           {recommendation.mainFeatures.length}개 핵심 기능
                         </dd>
                       </div>
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
-                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/45">
+                      <div className="brief-stat brief-stat--amber rounded-xl px-4 py-3 backdrop-blur-sm">
+                        <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
                           제작 난이도
                         </dt>
-                        <dd className="type-title mt-1 text-surface">{recommendation.difficulty}</dd>
+                        <dd className="mt-1 text-sm font-bold text-ink">{recommendation.difficulty}</dd>
                       </div>
                     </dl>
                   </div>
                 </header>
 
                 <div className="p-5 sm:p-8">
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-                    <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+                  <div className="grid gap-4">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                       <BriefList
                         eyebrow="누구를 위한 서비스인가"
                         icon={Flag}
@@ -1056,32 +1302,32 @@ export function VibeCraftApp() {
                         icon={ClipboardList}
                         items={recommendation.mainFeatures}
                         ordered
-                        tone="tile-violet"
+                        tone="tile-cyan"
                         title="MVP 핵심 기능"
                       />
                     </div>
 
-                    <aside className="relative overflow-hidden rounded-[1.25rem] bg-ink p-5 text-surface shadow-strong before:absolute before:-right-16 before:-top-16 before:h-44 before:w-44 before:rounded-full before:bg-signal/25 before:blur-3xl sm:p-6">
+                    <aside className="brief-spec-panel relative overflow-hidden rounded-[1.25rem] border p-5 text-ink sm:p-6">
                       <div className="relative z-10">
                         <div className="flex items-center gap-2">
                           <Wrench className="h-4 w-4 text-signal" />
-                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-surface/55">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
                             빌드 사양
                           </p>
                         </div>
-                        <dl className="mt-6 space-y-5">
-                          <div className="border-b border-white/10 pb-4">
-                            <dt className="type-label text-surface/45">제작 도구</dt>
-                            <dd className="type-title mt-1 text-surface">
+                        <dl className="mt-5 grid gap-5 md:grid-cols-2">
+                          <div className="border-b border-line pb-4 md:border-b-0 md:border-r md:pb-0 md:pr-5">
+                            <dt className="type-label text-muted">제작 도구</dt>
+                            <dd className="type-title mt-1 text-ink">
                               {selectedTool ? selectedToolInfo.name : recommendedToolInfo.name}
                             </dd>
                             {!selectedTool ? (
                               <span className="mt-1 block text-xs font-semibold text-signal">AI 추천</span>
                             ) : null}
                           </div>
-                          <div className="border-b border-white/10 pb-4">
-                            <dt className="type-label text-surface/45">서비스 형태</dt>
-                            <dd className="type-title mt-1 text-surface">
+                          <div className="border-b border-line pb-4 md:border-b-0 md:pb-0">
+                            <dt className="type-label text-muted">서비스 형태</dt>
+                            <dd className="type-title mt-1 text-ink">
                               {selectedServiceType
                                 ? selectedServiceInfo.title
                                 : recommendedServiceInfo.title}
@@ -1090,22 +1336,78 @@ export function VibeCraftApp() {
                               <span className="mt-1 block text-xs font-semibold text-signal">AI 추천</span>
                             ) : null}
                           </div>
-                          <div>
-                            <dt className="type-label text-surface/45">추천 스택</dt>
+                          <div className="md:col-span-2 md:border-t md:border-line md:pt-5">
+                            <dt className="type-label text-muted">추천 스택</dt>
+                            <dd className="mt-1 text-xs leading-5 text-muted">
+                              기술을 눌러 역할과 공부 순서를 확인하세요.
+                            </dd>
                             <dd className="mt-3 flex flex-wrap gap-1.5">
                               {displayedStack.map((item) => (
-                                <span
-                                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-surface/75"
+                                <button
+                                  aria-expanded={activeStackItem === item}
+                                  className={
+                                    "rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-300 active:scale-[0.98] " +
+                                    (activeStackItem === item
+                                      ? "border-signal bg-signal text-white shadow-sm"
+                                      : "border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-signal/40 hover:text-signal-ink")
+                                  }
                                   key={item}
+                                  onClick={() =>
+                                    setSelectedStackItem((current) => (current === item ? null : item))
+                                  }
+                                  type="button"
                                 >
                                   {item}
-                                </span>
+                                </button>
                               ))}
                             </dd>
+                            {activeStackGuide && activeStackItem ? (
+                              <div
+                                className="mt-4 rounded-xl border border-signal/20 bg-surface/80 p-4 shadow-[0_10px_24px_rgb(var(--tile-amber-ink)/0.06)]"
+                                role="region"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="h-4 w-4 text-signal" />
+                                  <p className="text-sm font-bold text-signal-ink">{activeStackItem}</p>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-ink">
+                                  {activeStackGuide.description}
+                                </p>
+                                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                                  <div className="rounded-lg bg-signal-soft/60 p-3">
+                                    <dt className="text-[11px] font-bold text-signal-ink">
+                                      이 프로젝트에서 하는 일
+                                    </dt>
+                                    <dd className="mt-1 text-xs leading-5 text-ink">
+                                      {activeStackGuide.projectRole}
+                                    </dd>
+                                  </div>
+                                  <div className="rounded-lg bg-canvas p-3">
+                                    <dt className="text-[11px] font-bold text-muted">
+                                      먼저 공부할 것
+                                    </dt>
+                                    <dd className="mt-1 text-xs leading-5 text-ink">
+                                      {activeStackGuide.firstStep}
+                                    </dd>
+                                  </div>
+                                </dl>
+                                {activeStackGuide.officialUrl ? (
+                                  <a
+                                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-signal-ink transition-colors hover:text-signal"
+                                    href={activeStackGuide.officialUrl}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    공식 사이트에서 배우기
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                ) : null}
+                              </div>
+                            ) : null}
                           </div>
                         </dl>
                         <button
-                          className="mt-7 flex items-center gap-2 text-sm font-bold text-signal hover:text-surface"
+                          className="mt-7 flex items-center gap-2 text-sm font-bold text-signal-ink transition-colors hover:text-signal"
                           onClick={() => setResource("concept")}
                           type="button"
                         >
@@ -1129,14 +1431,15 @@ export function VibeCraftApp() {
                         <h3 className="type-title mt-1 text-ink">구현 경로</h3>
                       </div>
                     </div>
-                    <ol className="stagger mt-5 grid gap-3 lg:grid-cols-5">
+                    <ol className="stagger mt-5 grid gap-3 md:grid-cols-2">
                       {displayedRoadmap.map((item, index) => (
                         <li
                           className={
                             "relative rounded-xl border p-4 " +
                             (index === 0
                               ? "border-signal/35 bg-signal-soft"
-                              : "border-line bg-canvas")
+                              : "border-line bg-canvas") +
+                            (index === displayedRoadmap.length - 1 ? " md:col-span-2" : "")
                           }
                           key={item}
                         >
@@ -1146,7 +1449,9 @@ export function VibeCraftApp() {
                             </span>
                             <span className="h-1.5 w-1.5 rounded-full bg-signal/50" />
                           </div>
-                          <p className="mt-3 text-sm font-semibold leading-6 text-ink">{item}</p>
+                          <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-ink">
+                            {item}
+                          </p>
                         </li>
                       ))}
                     </ol>
@@ -1173,7 +1478,7 @@ export function VibeCraftApp() {
               {tools.map((tool, index) => {
                 const selected = selectedTool === tool.slug;
                 const recommended = recommendation.recommendedTool === tool.slug;
-                const Icon = toolIcons[tool.slug];
+                const learning = toolLearningInfo[tool.slug];
                 return (
                   <div
                     className={
@@ -1201,13 +1506,17 @@ export function VibeCraftApp() {
                       </span>
                       <span
                         className={
-                          "grid h-10 w-10 place-items-center border " +
+                          "grid h-11 w-11 place-items-center overflow-hidden rounded-xl border " +
                           (selected
                             ? "semantic-icon border-transparent"
                             : "border-line bg-surface/70 text-muted")
                         }
                       >
-                        <Icon className="h-4 w-4" />
+                        <img
+                          alt={`${tool.name} 로고`}
+                          className="h-7 w-7 object-contain"
+                          src={toolLogos[tool.slug]}
+                        />
                       </span>
                       <span>
                         <span className="type-title block">
@@ -1255,6 +1564,83 @@ export function VibeCraftApp() {
                             ))}
                           </ul>
                         </div>
+                        <section className="border-t border-line pt-6 md:col-span-2">
+                          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-signal" />
+                                <h4 className="text-sm font-bold text-ink">
+                                  {tool.name} 사용 방법 알아보기
+                                </h4>
+                              </div>
+                              <p className="mt-3 text-sm leading-6 text-muted">
+                                {learning.overview}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-signal/20 bg-signal-soft/60 p-4">
+                              <p className="text-[11px] font-bold text-signal-ink">
+                                초보자 추천 순서
+                              </p>
+                              <p className="mt-1.5 text-xs leading-5 text-ink">
+                                {learning.beginnerPath}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            {learning.surfaces.map((surface) => {
+                              const SurfaceIcon = toolSurfaceIcons[surface.kind];
+                              return (
+                                <article
+                                  className="rounded-xl border border-line bg-surface/75 p-4"
+                                  key={surface.title}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="grid h-7 w-7 place-items-center rounded-lg bg-signal-soft text-signal-ink">
+                                      <SurfaceIcon className="h-3.5 w-3.5" />
+                                    </span>
+                                    <h5 className="text-xs font-bold text-ink">{surface.title}</h5>
+                                  </div>
+                                  <p className="mt-2 text-xs leading-5 text-muted">
+                                    {surface.description}
+                                  </p>
+                                </article>
+                              );
+                            })}
+                          </div>
+
+                          {learning.installCommand ? (
+                            <div className="mt-5 rounded-xl bg-ink p-4 text-surface">
+                              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-surface/55">
+                                터미널 설치 명령
+                              </p>
+                              <code className="mt-2 block overflow-x-auto whitespace-nowrap font-mono text-xs text-surface">
+                                {learning.installCommand}
+                              </code>
+                            </div>
+                          ) : null}
+
+                          <div className="mt-5 flex flex-wrap gap-2">
+                            <a
+                              className="inline-flex items-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-signal-ink active:scale-[0.98]"
+                              href={learning.installUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              공식 설치 페이지
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                            <a
+                              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-xs font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-signal/40 hover:text-signal-ink active:scale-[0.98]"
+                              href={learning.docsUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              공식 학습 문서
+                              <BookOpen className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        </section>
                       </div>
                     ) : null}
                   </div>
