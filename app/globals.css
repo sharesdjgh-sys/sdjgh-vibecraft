@@ -250,6 +250,17 @@ body {
     transform 400ms var(--spring);
 }
 
+.mission-card {
+  border-color: rgb(var(--tile-violet-line) / 0.72);
+  background:
+    radial-gradient(circle at 92% 8%, rgb(var(--color-signal) / 0.16), transparent 16rem),
+    radial-gradient(circle at 4% 100%, rgb(var(--tile-amber-ink) / 0.09), transparent 18rem),
+    rgb(var(--color-surface));
+  box-shadow:
+    0 22px 52px rgb(104 66 47 / 0.11),
+    inset 0 1px 0 rgb(255 255 255 / 0.86);
+}
+
 .mission-route-card > div span:last-child {
   transition:
     background-color 400ms var(--spring),
@@ -780,6 +791,11 @@ samp {
   --design-resource-accent: var(--tile-cyan-ink);
 }
 
+.design-resource-card {
+  border-color: rgb(var(--design-resource-line) / 0.72);
+  background: rgb(var(--design-resource-bg) / 0.32);
+}
+
 .tool-surface-card--app {
   --tool-surface-bg: var(--tile-violet);
   --tool-surface-line: var(--tile-violet-line);
@@ -884,6 +900,21 @@ samp {
     background-color 400ms var(--spring),
     color 400ms var(--spring),
     transform 400ms var(--spring);
+}
+
+.technology-flow-node.task-flow-status-active {
+  border-color: rgb(var(--color-signal) / 0.42);
+  background-color: rgb(var(--color-signal-soft));
+}
+
+.technology-flow-node.task-flow-status-done {
+  border-color: rgb(var(--color-success) / 0.34);
+  background-color: rgb(var(--color-success) / 0.05);
+}
+
+.technology-flow-node.task-flow-status-blocked {
+  border-color: rgb(var(--color-warning) / 0.38);
+  background-color: rgb(var(--color-warning) / 0.06);
 }
 
 @media (min-width: 640px) {

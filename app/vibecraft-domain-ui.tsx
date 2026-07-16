@@ -68,6 +68,13 @@ const statusClasses: Record<ChecklistStatus, string> = {
   blocked: "border-warning/30 bg-warning/10 text-warning",
 };
 
+const statusIcons: Record<ChecklistStatus, LucideIcon> = {
+  pending: Circle,
+  active: Play,
+  done: Check,
+  blocked: Hand,
+};
+
 const taskRowClasses: Record<ChecklistStatus, string> = {
   pending: "border-line bg-surface",
   active: "border-signal/30 bg-signal-soft/60 shadow-soft",
@@ -372,15 +379,15 @@ export function MissionCard({
   status: ChecklistStatus;
 }) {
   return (
-    <article className="relative overflow-hidden rounded-[1.75rem] bg-ink px-5 py-7 text-surface shadow-strong before:absolute before:-right-24 before:-top-24 before:h-64 before:w-64 before:rounded-full before:bg-signal/30 before:blur-3xl sm:px-8 sm:py-9">
+    <article className="mission-card relative overflow-hidden rounded-[1.75rem] border px-5 py-7 sm:px-8 sm:py-9">
       <div className="relative z-10">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal-ink">
           지금 할 한 가지 · {statusLabels[status]}
         </p>
-        <h2 className="type-display mt-4 max-w-3xl">
+        <h2 className="type-display mt-4 max-w-3xl text-ink">
           {item.title}
         </h2>
-        <p className="type-body mt-4 max-w-2xl text-surface/65">{item.description}</p>
+        <p className="type-body mt-4 max-w-2xl text-muted">{item.description}</p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           {status !== "active" ? (
             <button
@@ -393,7 +400,7 @@ export function MissionCard({
             </button>
           ) : null}
           <button
-            className="action-button border border-surface/25 bg-surface text-ink hover:border-success hover:bg-success/15 hover:text-surface"
+            className="action-button border border-success/30 bg-surface text-success hover:border-success hover:bg-success hover:text-white"
             onClick={onComplete}
             type="button"
           >
@@ -401,7 +408,7 @@ export function MissionCard({
             완료했어요
           </button>
           <button
-            className="action-button border border-warning/60 bg-transparent text-surface hover:bg-warning/20"
+            className="action-button border border-warning/40 bg-warning/10 text-warning hover:border-warning hover:bg-warning hover:text-white"
             onClick={onBlocked}
             type="button"
           >
@@ -418,13 +425,59 @@ export function TaskRow({
   index,
   item,
   onChange,
+  showSequence = false,
   status,
 }: {
   index: number;
   item: ChecklistItem;
   onChange: (status: ChecklistStatus) => void;
+  showSequence?: boolean;
   status: ChecklistStatus;
 }) {
+  if (showSequence) {
+    return (
+      <article className={`technology-flow-node task-flow-status-${status} flex flex-col`}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="technology-flow-number">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <span className="rounded-full bg-canvas px-2 py-1 font-mono text-[9px] font-bold text-muted">
+            STEP {index + 1}
+          </span>
+        </div>
+        <h3 className="mt-4 text-base font-bold leading-5 text-ink">{item.title}</h3>
+        <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
+        <fieldset className="mt-auto border-t border-line pt-4">
+          <legend className="sr-only">{item.title} 작업 상태</legend>
+          <p className="text-[10px] font-bold text-signal-ink">작업 상태</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(Object.keys(statusLabels) as ChecklistStatus[]).map((nextStatus) => {
+              const StatusIcon = statusIcons[nextStatus];
+              const selected = status === nextStatus;
+              return (
+                <button
+                  aria-pressed={selected}
+                  className={
+                    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[10px] font-bold transition-all duration-300 active:scale-[0.97] " +
+                    (selected
+                      ? statusClasses[nextStatus] + " shadow-sm"
+                      : "border-line bg-surface/70 text-muted hover:border-signal/30 hover:bg-signal-soft hover:text-signal-ink")
+                  }
+                  key={nextStatus}
+                  onClick={() => onChange(nextStatus)}
+                  type="button"
+                >
+                  <StatusIcon className="h-3.5 w-3.5" />
+                  {statusLabels[nextStatus]}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      </article>
+    );
+  }
+
   return (
     <article
       className={

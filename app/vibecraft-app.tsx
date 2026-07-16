@@ -325,7 +325,7 @@ const designPartners = [
     primaryLabel: "Claude Design 열기",
     guideUrl: "https://support.claude.com/en/articles/14604416-get-started-with-claude-design",
     tone: "tile-amber",
-    icon: Pencil,
+    logo: "/tool-logos/claude.ico",
   },
   {
     name: "Google Stitch",
@@ -341,7 +341,7 @@ const designPartners = [
     primaryLabel: "Stitch 시작하기",
     guideUrl: "https://developers.googleblog.com/en/stitch-a-new-way-to-design-uis/",
     tone: "tile-blue",
-    icon: Layers3,
+    logo: "/tool-logos/google-stitch.svg",
   },
 ] as const;
 
@@ -1823,13 +1823,11 @@ export function VibeCraftApp() {
               />
 
               <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                {designPartners.map((partner) => {
-                  const PartnerIcon = partner.icon;
-                  return (
-                    <article
-                      className={`semantic-tile ${partner.tone} rounded-[1.25rem] p-5 text-ink sm:p-6`}
-                      key={partner.name}
-                    >
+                {designPartners.map((partner) => (
+                  <article
+                    className={`semantic-tile ${partner.tone} rounded-[1.25rem] p-5 text-ink sm:p-6`}
+                    key={partner.name}
+                  >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
@@ -1837,8 +1835,12 @@ export function VibeCraftApp() {
                           </p>
                           <h3 className="type-title mt-2">{partner.name}</h3>
                         </div>
-                        <span className="semantic-icon grid h-10 w-10 shrink-0 place-items-center rounded-xl">
-                          <PartnerIcon className="h-5 w-5" />
+                        <span className="semantic-icon grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl">
+                          <img
+                            alt={`${partner.name} 로고`}
+                            className="h-7 w-7 object-contain"
+                            src={partner.logo}
+                          />
                         </span>
                       </div>
                       <p className="mt-4 text-sm leading-6 text-muted">{partner.description}</p>
@@ -1874,9 +1876,8 @@ export function VibeCraftApp() {
                           <BookOpen className="h-3.5 w-3.5" />
                         </a>
                       </div>
-                    </article>
-                  );
-                })}
+                  </article>
+                ))}
               </div>
 
               <div className="brief-shell mt-5 p-5 sm:p-7">
@@ -1892,7 +1893,7 @@ export function VibeCraftApp() {
                   </div>
                 </div>
 
-                <div className="mt-6 divide-y divide-line border-y border-line">
+                <div className="mt-6 grid gap-3 border-y border-line py-3">
                   {designResources.map((resource, index) => (
                     <article
                       className={`interactive-card design-resource-card ${resource.tone} grid gap-5 rounded-xl border border-transparent px-3 py-6 lg:grid-cols-[48px_minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start`}
@@ -2150,9 +2151,9 @@ export function VibeCraftApp() {
           <div>
             <Eyebrow>실제 제작 · 03</Eyebrow>
             <h1 className="type-display mt-4 text-signal-ink">
-              오늘 필요한 한 단계에만
+              계획한 내용을
               <br />
-              집중하세요.
+              실제 결과물로 만들어 보세요.
             </h1>
           </div>
           <div className="w-full max-w-xs">
@@ -2190,16 +2191,17 @@ export function VibeCraftApp() {
 
         <div className="mt-14">
           <SectionHeading
-            description="진행 중인 작업은 하나만 두는 것이 좋습니다. 막히면 해당 문맥이 해결 도우미로 자동 전달됩니다."
+            description="위에서 아래로 한 단계씩 진행하세요. 진행 중인 작업은 하나만 두고, 막히면 해당 문맥을 해결 도우미로 전달합니다."
             title="전체 작업"
           />
-          <div className="stagger mt-2">
+          <div className="technology-flow stagger mt-5">
             {checklistItems.map((item, index) => (
               <TaskRow
                 index={index}
                 item={item}
                 key={item.id}
                 onChange={(status) => setChecklist(item, status)}
+                showSequence
                 status={checklistStatuses[item.id] ?? "pending"}
               />
             ))}

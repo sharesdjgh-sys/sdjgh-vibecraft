@@ -153,6 +153,7 @@ export const conceptCards = [
 ];
 
 export const baseChecklist: ChecklistItem[] = [
+  { id: "git-install", title: "Git 설치 확인", description: "Git을 설치하고 터미널에서 git --version 명령이 실행되는지 확인합니다." },
   { id: "github-account", title: "GitHub 계정 준비", description: "프로젝트 저장소를 만들 계정과 이메일을 확인합니다." },
   { id: "project-create", title: "프로젝트 생성", description: "Next.js, TypeScript, Tailwind 기반 프로젝트를 시작합니다." },
   { id: "local-run", title: "로컬 실행", description: "개발 서버를 실행하고 첫 화면이 뜨는지 확인합니다." },
@@ -165,6 +166,7 @@ export const baseChecklist: ChecklistItem[] = [
 ];
 
 export const softwareChecklist: ChecklistItem[] = [
+  { id: "git-install", title: "Git 설치 확인", description: "Git을 설치하고 터미널에서 git --version 명령이 실행되는지 확인합니다." },
   { id: "github-account", title: "GitHub 계정 준비", description: "프로젝트와 변경 기록을 보관할 계정을 확인합니다." },
   { id: "automation-sample", title: "입력 사례 준비", description: "실제로 처리할 자료 한 개와 기대 결과를 나란히 준비합니다." },
   { id: "project-create", title: "자동화 프로젝트 생성", description: "Node.js와 TypeScript 기반으로 실행 가능한 프로젝트를 시작합니다." },
