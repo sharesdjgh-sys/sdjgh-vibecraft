@@ -363,6 +363,70 @@ body {
   animation: phase-rise 700ms var(--spring) both;
 }
 
+.resource-drawer-backdrop {
+  animation: drawer-backdrop-in 320ms ease-out both;
+}
+
+.resource-drawer {
+  background:
+    radial-gradient(circle at 12% 0%, rgb(var(--color-signal) / 0.08), transparent 18rem),
+    rgb(var(--color-surface));
+  box-shadow:
+    -28px 24px 80px rgb(72 45 32 / 0.19),
+    inset 1px 0 0 rgb(255 255 255 / 0.72);
+  animation: drawer-panel-in 520ms var(--spring) both;
+}
+
+.resource-drawer-header {
+  background:
+    linear-gradient(120deg, rgb(var(--color-surface) / 0.92), rgb(var(--color-signal-soft) / 0.48));
+}
+
+.resource-drawer-header::after {
+  position: absolute;
+  right: 5.5rem;
+  bottom: -1px;
+  width: 3.5rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgb(var(--color-signal));
+  content: "";
+}
+
+.resource-drawer-body {
+  scrollbar-color: rgb(var(--color-control-line)) transparent;
+  scrollbar-width: thin;
+}
+
+@keyframes drawer-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes drawer-panel-in {
+  from {
+    opacity: 0;
+    transform: translate3d(2.5rem, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 639px) {
+  @keyframes drawer-panel-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 2.5rem, 0) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
 .stagger > * {
   animation: phase-rise 700ms var(--spring) both;
 }
@@ -1052,6 +1116,66 @@ samp {
   .technology-flow-node:nth-child(5):not(:last-child)::after,
   .technology-flow-node:nth-child(6):not(:last-child)::after,
   .technology-flow-node:nth-child(7):not(:last-child)::after {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: -1.375rem;
+    content: "←";
+    transform: translateY(-50%);
+  }
+
+  .technology-flow--two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 1) {
+    grid-column: 1;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 2),
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 3) {
+    grid-column: 2;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n) {
+    grid-column: 1;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(1),
+  .technology-flow--two-column .technology-flow-node:nth-child(2) {
+    grid-row: 1;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(3),
+  .technology-flow--two-column .technology-flow-node:nth-child(4) {
+    grid-row: 2;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(5),
+  .technology-flow--two-column .technology-flow-node:nth-child(6) {
+    grid-row: 3;
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 1):not(:last-child)::after {
+    top: 50%;
+    right: -1.375rem;
+    bottom: auto;
+    left: auto;
+    content: "→";
+    transform: translateY(-50%);
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 2):not(:last-child)::after,
+  .technology-flow--two-column .technology-flow-node:nth-child(4n):not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -1.375rem;
+    left: 50%;
+    content: "↓";
+    transform: translateX(-50%);
+  }
+
+  .technology-flow--two-column .technology-flow-node:nth-child(4n + 3):not(:last-child)::after {
     top: 50%;
     right: auto;
     bottom: auto;

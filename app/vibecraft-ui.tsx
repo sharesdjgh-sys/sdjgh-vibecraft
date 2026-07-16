@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Check, Cloud, Loader2, X } from "lucide-react";
+import { ArrowRight, Check, Cloud, Loader2, Sparkles, X } from "lucide-react";
 import {
   phaseMetadata,
   phaseOrder,
@@ -295,10 +295,10 @@ export function ResourceDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="resource-drawer-layer fixed inset-0 z-50">
       <button
         aria-label="도움 도구 닫기"
-        className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]"
+        className="resource-drawer-backdrop absolute inset-0 bg-ink/35 backdrop-blur-[3px]"
         onClick={onClose}
         type="button"
       />
@@ -306,24 +306,33 @@ export function ResourceDrawer({
         aria-labelledby="resource-drawer-title"
         aria-modal="true"
         className={
-          "absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-line bg-surface shadow-drawer sm:inset-y-0 sm:max-h-none sm:rounded-none sm:rounded-l-[1.5rem] " +
+          "resource-drawer absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-line bg-surface shadow-drawer sm:inset-y-3 sm:max-h-none sm:rounded-[1.75rem_0_0_1.75rem] " +
           (wide ? "sm:max-w-[820px]" : "sm:max-w-[520px]")
         }
         ref={panelRef}
         role="dialog"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-5 sm:px-7">
-          <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-signal-ink">{eyebrow}</p>
-            <h2 className="type-title mt-1 text-ink" id="resource-drawer-title">
-              {title}
-            </h2>
+        <span aria-hidden="true" className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-ink/15 sm:hidden" />
+        <div className="resource-drawer-header relative flex items-start justify-between gap-4 border-b border-line px-5 pb-5 pt-4 sm:px-7 sm:py-7">
+          <div className="relative flex min-w-0 items-start gap-3.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] border border-signal/15 bg-signal-soft text-signal-ink shadow-[inset_0_1px_0_rgb(255_255_255/.8)]">
+              <Sparkles className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-signal-ink">{eyebrow}</p>
+              <h2 className="mt-0.5 text-[1.3rem] font-extrabold leading-tight tracking-[-0.025em] text-ink" id="resource-drawer-title">
+                {title}
+              </h2>
+              <p className="mt-1 hidden text-xs leading-5 text-muted sm:block">
+                작업 흐름을 유지한 채 필요한 도움을 바로 확인하세요.
+              </p>
+            </div>
           </div>
-          <button className="icon-button" onClick={onClose} ref={closeRef} type="button" aria-label="닫기">
+          <button className="icon-button relative shrink-0 bg-surface/80" onClick={onClose} ref={closeRef} type="button" aria-label="닫기">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">{children}</div>
+        <div className="resource-drawer-body min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">{children}</div>
       </div>
     </div>
   );

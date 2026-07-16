@@ -548,11 +548,15 @@ export function ResourceDock({
   return (
     <button
       aria-label="프로젝트 코치 열기"
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 grid h-14 w-14 place-items-center rounded-full border border-signal bg-signal text-white shadow-[0_10px_28px_rgba(207,92,57,.32)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:bg-signal-ink active:scale-[.98] lg:bottom-6 lg:right-6"
+      className="group fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-40 flex h-14 items-center justify-center gap-2.5 rounded-full border border-signal bg-signal px-[1.05rem] text-white shadow-[0_12px_32px_rgba(164,62,35,.28)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:bg-signal-ink hover:shadow-[0_16px_38px_rgba(164,62,35,.34)] active:scale-[.98] lg:bottom-6 lg:right-6 lg:px-5"
       onClick={() => onOpen("coach")}
       type="button"
     >
-      <MessageCircle className="h-6 w-6" />
+      <span className="relative">
+        <MessageCircle className="h-5 w-5 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" />
+        <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-signal bg-white transition-colors group-hover:border-signal-ink" />
+      </span>
+      <span className="hidden text-sm font-extrabold tracking-[-0.015em] lg:inline">프로젝트 코치</span>
     </button>
   );
 }
@@ -566,23 +570,28 @@ export function ResourceSwitcher({
 }) {
   const order: ResourceId[] = ["coach", "concept", "terms", "prompts", "error"];
   return (
-    <nav aria-label="도움 도구 선택" className="mb-7 flex gap-1 overflow-x-auto border-b border-line">
-      {order.map((resourceId) => (
-        <button
-          aria-current={activeResource === resourceId ? "page" : undefined}
-          className={
-            "shrink-0 border-b-2 px-2 pb-3 text-xs font-bold transition-colors " +
-            (activeResource === resourceId
-              ? "border-signal text-ink"
-              : "border-transparent text-muted hover:text-ink")
-          }
-          key={resourceId}
-          onClick={() => onChange(resourceId)}
-          type="button"
-        >
-          {resourceMetadata[resourceId].short}
-        </button>
-      ))}
+    <nav aria-label="도움 도구 선택" className="mb-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-line bg-canvas/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/.75)]">
+      {order.map((resourceId) => {
+        const Icon = resourceMetadata[resourceId].icon;
+        const selected = activeResource === resourceId;
+        return (
+          <button
+            aria-current={selected ? "page" : undefined}
+            className={
+              "flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-all duration-300 " +
+              (selected
+                ? "bg-surface text-ink shadow-[0_4px_14px_rgba(104,66,47,.10),inset_0_0_0_1px_rgb(var(--color-line))]"
+                : "text-muted hover:bg-surface/60 hover:text-ink")
+            }
+            key={resourceId}
+            onClick={() => onChange(resourceId)}
+            type="button"
+          >
+            <Icon className={"h-3.5 w-3.5 " + (selected ? "text-signal" : "")} />
+            {resourceMetadata[resourceId].short}
+          </button>
+        );
+      })}
     </nav>
   );
 }

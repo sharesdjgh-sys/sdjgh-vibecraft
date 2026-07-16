@@ -2309,13 +2309,14 @@ export function VibeCraftApp() {
               description={"완료한 점검 " + deployDone + "/" + deploymentItems.length}
               title="공개 전 최종 점검"
             />
-            <div className="stagger mt-2">
+            <div className="technology-flow technology-flow--two-column stagger mt-5">
               {deploymentItems.map((item, index) => (
                 <TaskRow
                   index={index}
                   item={item}
                   key={item.id}
                   onChange={(status) => setDeployCheck(item, status)}
+                  showSequence
                   status={deploymentStatuses[item.id] ?? "pending"}
                 />
               ))}
@@ -2578,9 +2579,12 @@ export function VibeCraftApp() {
 
     return (
       <div className="flex min-h-full flex-col">
-        <div className="border-l-2 border-signal bg-signal-soft px-4 py-3">
-          <p className="text-xs font-bold text-ink">현재 알고 있는 문맥</p>
-          <p className="mt-1 text-xs leading-5 text-muted">
+        <div className="rounded-2xl border border-signal/15 bg-signal-soft/70 px-4 py-3.5 shadow-[inset_0_1px_0_rgb(255_255_255/.7)]">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_0_4px_rgb(var(--color-success)/.1)]" />
+            <p className="text-xs font-extrabold text-ink">프로젝트 문맥 연결됨</p>
+          </div>
+          <p className="mt-1.5 pl-4 text-xs leading-5 text-muted">
             {phaseMetadata[safePhase].label} · {selectedToolInfo.name} ·{" "}
             {selectedServiceInfo.title}
           </p>
@@ -2590,25 +2594,28 @@ export function VibeCraftApp() {
           className="mt-6 min-h-0 flex-1 space-y-4 overflow-y-auto"
         >
           {chatMessages.map((message, index) => (
-            <div
-              className={
-                "max-w-[92%] border px-4 py-3 text-sm leading-6 " +
-                (message.role === "user"
-                  ? "ml-auto border-ink bg-ink text-surface"
-                  : "border-line bg-canvas text-ink")
-              }
-              key={message.role + "-" + index}
-            >
-              <p>{message.content}</p>
+            <div className={"flex items-end gap-2.5 " + (message.role === "user" ? "justify-end" : "justify-start")} key={message.role + "-" + index}>
+              {message.role === "assistant" ? (
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-signal-soft text-[10px] font-extrabold text-signal-ink">VC</span>
+              ) : null}
+              <div
+                className={
+                  "max-w-[86%] rounded-2xl border px-4 py-3 text-sm leading-6 shadow-[0_5px_16px_rgba(104,66,47,.06)] " +
+                  (message.role === "user"
+                    ? "rounded-br-md border-ink bg-ink text-surface"
+                    : "rounded-bl-md border-line bg-surface text-ink")
+                }
+              >
+                <p>{message.content}</p>
               {message.links?.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {message.links.map((link) => (
                     <button
                       className={
-                        "border px-2 py-1 text-[11px] font-bold " +
+                        "rounded-full border px-2.5 py-1 text-[11px] font-bold transition-all hover:-translate-y-0.5 " +
                         (message.role === "user"
                           ? "border-surface/30 text-surface"
-                          : "border-line bg-surface text-signal-ink")
+                          : "border-signal/20 bg-signal-soft/60 text-signal-ink hover:bg-signal-soft")
                       }
                       key={link}
                       onClick={() => followAssistantLink(link)}
@@ -2619,10 +2626,11 @@ export function VibeCraftApp() {
                   ))}
                 </div>
               ) : null}
+              </div>
             </div>
           ))}
         </div>
-        <div className="sticky bottom-0 mt-6 border-t border-line bg-surface pt-4 safe-area-bottom">
+        <div className="sticky bottom-0 mt-6 border-t border-line bg-surface/95 pt-4 backdrop-blur-xl safe-area-bottom">
           <label className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
             <span className="sr-only">프로젝트 코치에게 질문</span>
             <input
@@ -2638,7 +2646,7 @@ export function VibeCraftApp() {
                   void sendChatMessage();
                 }
               }}
-              placeholder="지금 막힌 내용을 적어주세요"
+              placeholder="무엇이 막혔나요?"
               value={chatInput}
             />
             <button
