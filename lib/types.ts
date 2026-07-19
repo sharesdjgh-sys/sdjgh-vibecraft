@@ -2,7 +2,7 @@ export type Role = "student" | "teacher" | "adult";
 
 export type ToolSlug = "codex" | "claude" | "antigravity";
 
-export type ServiceType = "web" | "mobile-web" | "software";
+export type ServiceType = "web" | "mobile-web" | "game" | "software";
 
 export type ChecklistStatus = "pending" | "active" | "done" | "blocked";
 

@@ -1,8 +1,9 @@
-import { baseChecklist, promptTemplates, serviceTypes, softwareChecklist } from "./vibecraft-data";
+import { baseChecklist, gameChecklist, promptTemplates, serviceTypes, softwareChecklist } from "./vibecraft-data";
 import type { ChecklistItem, ErrorSolution, Recommendation, Role, ServiceType, ToolSlug } from "./types";
 
 const mobileSignals = ["모바일", "스마트폰", "휴대폰", "pwa", "하단 탭", "하단 네비게이션", "터치", "오프라인"];
 const softwareSignals = ["자동화", "파일", "엑셀", "csv", "스크립트", "cli", "반복 업무", "문서 변환"];
+const gameSignals = ["게임", "플레이", "캐릭터", "점수", "스테이지", "퀴즈 게임", "퍼즐"];
 const documentSignals = ["긴 문서", "기획서", "수업", "활동지", "설명 자료", "요약", "보고서", "문서 정리"];
 const visualSignals = ["디자인", "모바일", "프로토타입", "사용자 흐름", "ui", "ux", "와이어프레임"];
 const hardSignals = ["로그인", "회원가입", "계정", "결제", "구독", "실시간", "채팅", "권한", "관리자", "알림"];
@@ -40,15 +41,23 @@ function defaultFeaturesFor(serviceType: ServiceType) {
     return ["자료 입력", "작업 실행", "결과 확인", "실패 안내", "실행 방법"];
   }
 
+  if (serviceType === "game") {
+    return ["게임 시작", "플레이 조작", "점수", "성공과 실패", "다시 하기"];
+  }
+
   return ["첫 화면", "사용자 입력", "결과 확인", "모바일 화면", "배포"];
 }
 
-function pickServiceType(text: string): ServiceType {
+function pickServiceType(text: string, role: Role): ServiceType {
+  if (role === "student" && includesAny(text, gameSignals)) {
+    return "game";
+  }
+
   if (includesAny(text, mobileSignals) || isStandaloneAppIdea(text)) {
     return "mobile-web";
   }
 
-  if (includesAny(text, softwareSignals)) {
+  if (role !== "student" && includesAny(text, softwareSignals)) {
     return "software";
   }
 
@@ -130,6 +139,16 @@ function targetUsersForRole(role: Role) {
 }
 
 function roadmapFor(serviceType: ServiceType, difficulty: Recommendation["difficulty"], text: string) {
+  if (serviceType === "game") {
+    return [
+      "플레이어의 목표와 조작 방법을 정합니다.",
+      "시작 → 플레이 → 결과로 이어지는 한 판을 구현합니다.",
+      "점수와 성공·실패 조건을 연결합니다.",
+      "키보드와 터치 조작을 확인합니다.",
+      "공개 링크를 친구에게 보내 직접 플레이하게 합니다.",
+    ];
+  }
+
   if (serviceType === "software") {
     const steps = [
       "반복할 작업의 입력과 기대 결과를 한 사례로 정합니다.",
@@ -175,6 +194,10 @@ function checklistFor(serviceType: ServiceType): ChecklistItem[] {
     return softwareChecklist;
   }
 
+  if (serviceType === "game") {
+    return gameChecklist;
+  }
+
   return baseChecklist;
 }
 
@@ -208,6 +231,11 @@ function serviceReason(serviceType: ServiceType, text: string) {
   if (serviceType === "software") {
     const signal = firstMatchingSignal(text, softwareSignals);
     return `${signal ? `'${signal}' 작업이 핵심이라` : "반복 작업 처리가 중심이라"} 입력 → 실행 → 결과가 분명한 자동화 도구가 적합합니다.`;
+  }
+
+  if (serviceType === "game") {
+    const signal = firstMatchingSignal(text, gameSignals);
+    return `${signal ? `'${signal}' 아이디어라` : "직접 조작하고 결과를 확인하는 흐름이라"} 시작부터 결과까지 한 판을 완성하는 게임 형태가 적합합니다.`;
   }
 
   return "설치가 필요한 앱이나 파일 자동화보다 링크로 입력과 결과를 공유하는 흐름에 가까워 웹 서비스가 적합합니다.";
@@ -287,7 +315,7 @@ function difficultyReason(difficulty: Recommendation["difficulty"], serviceType:
 
 function interviewQuestions(role: Role, idea: string) {
   const text = idea.toLowerCase();
-  const serviceType = pickServiceType(text);
+  const serviceType = pickServiceType(text, role);
   const questions: string[] = [];
 
   if (role === "teacher") {
@@ -300,6 +328,8 @@ function interviewQuestions(role: Role, idea: string) {
 
   if (serviceType === "software") {
     questions.push("어떤 자료를 넣으면 어떤 결과가 나와야 하나요?");
+  } else if (serviceType === "game") {
+    questions.push("플레이어가 무엇을 조작하고, 어떻게 하면 성공하거나 실패하나요?");
   } else if (serviceType === "mobile-web") {
     questions.push("스마트폰에서 사용자가 가장 먼저 할 일은 무엇인가요?");
   } else {
@@ -345,7 +375,7 @@ export function buildRecommendation(input: {
   fallbackSummary?: string;
 }): Recommendation {
   const normalized = input.text.toLowerCase();
-  const recommendedServiceType = pickServiceType(normalized);
+  const recommendedServiceType = pickServiceType(normalized, input.role);
   const recommendedTool = pickTool(normalized, input.role);
   const difficulty = pickDifficulty(normalized);
   const serviceTitle = serviceTypes.find((item) => item.id === recommendedServiceType)?.title ?? "웹 서비스";

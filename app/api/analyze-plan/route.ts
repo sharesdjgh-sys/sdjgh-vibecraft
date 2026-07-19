@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       prompt: `다음 기획서를 분석해 프로젝트 브리프를 작성하세요.
 
 사용자 역할: ${parsed.data.role}
+서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 마세요. 게임 아이디어라면 game을 추천하세요." : "교사와 일반인에게는 game을 추천하지 마세요. 파일 처리나 반복 업무라면 software를 추천하세요."}
 
 반드시 다음 JSON 구조와 키를 그대로 사용하세요:
 ${recommendationJsonShape}

@@ -8,7 +8,7 @@ const schema = z.object({
   message: z.string().min(1).max(10000),
   currentPage: z.string().optional(),
   selectedTool: z.enum(["codex", "claude", "antigravity"]).optional(),
-  selectedServiceType: z.enum(["web", "mobile-web", "software"]).optional(),
+  selectedServiceType: z.enum(["web", "mobile-web", "game", "software"]).optional(),
   projectSummary: z.string().optional(),
 });
 

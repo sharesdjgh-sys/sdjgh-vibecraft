@@ -125,6 +125,13 @@ export const serviceTypes: ServiceTypeInfo[] = [
     screens: ["모바일 홈", "단계형 입력", "하단 탭", "전체화면 시트", "완료 화면"],
   },
   {
+    id: "game",
+    title: "게임",
+    description: "브라우저에서 바로 실행하고 친구에게 링크로 공유하는 게임",
+    stack: ["Next.js", "TypeScript", "Canvas", "Tailwind CSS", "Vercel"],
+    screens: ["시작 화면", "게임 화면", "조작 안내", "점수 또는 결과", "다시 하기"],
+  },
+  {
     id: "software",
     title: "SW 또는 자동화 도구",
     description: "파일 처리, 반복 업무, 간단한 내부 도구에 맞춘 형태",
@@ -176,6 +183,19 @@ export const softwareChecklist: ChecklistItem[] = [
   { id: "error-review", title: "에러 해결", description: "실행 로그를 해결 도우미에 붙여넣고 원인을 확인합니다." },
   { id: "share-runbook", title: "실행 방법 공유", description: "다른 사람이 설치하고 실행할 수 있는 짧은 안내를 작성합니다." },
   { id: "final-check", title: "공개 전 점검", description: "비밀 정보, 입력 사례, 실패 메시지, 공유 주소를 최종 확인합니다." },
+];
+
+export const gameChecklist: ChecklistItem[] = [
+  { id: "git-install", title: "Git 설치 확인", description: "Git을 설치하고 터미널에서 git --version 명령이 실행되는지 확인합니다." },
+  { id: "github-account", title: "GitHub 계정 준비", description: "게임 프로젝트를 저장하고 공유할 계정을 확인합니다." },
+  { id: "game-rule", title: "게임 규칙 정하기", description: "플레이어의 목표, 조작 방법, 성공과 실패 조건을 한 문장씩 정합니다." },
+  { id: "project-create", title: "게임 프로젝트 생성", description: "브라우저에서 실행할 TypeScript 프로젝트를 시작합니다." },
+  { id: "local-run", title: "게임 실행", description: "개발 서버를 열고 브라우저에 게임 화면이 표시되는지 확인합니다." },
+  { id: "game-control", title: "조작 구현", description: "키보드나 터치로 캐릭터 또는 게임 요소를 움직입니다." },
+  { id: "game-loop", title: "핵심 규칙 구현", description: "시작부터 성공 또는 실패 결과까지 한 판을 끝낼 수 있게 만듭니다." },
+  { id: "game-feedback", title: "점수와 피드백", description: "플레이 결과, 점수, 다시 하기 버튼을 화면에 표시합니다." },
+  { id: "mobile-check", title: "화면과 조작 확인", description: "PC와 스마트폰에서 화면이 잘리고 조작이 막히지 않는지 확인합니다." },
+  { id: "deploy-vercel", title: "게임 공개", description: "Vercel에 배포하고 다른 사람이 링크로 한 판을 완료하는지 확인합니다." },
 ];
 
 export const terms: TermInfo[] = [

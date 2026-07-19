@@ -36,6 +36,7 @@ export async function POST(request: Request) {
 이미 아이디어에 답이 있는 내용은 다시 묻지 마세요. 기술 용어 대신 실제 사용 상황을 질문하세요.
 
 사용자 역할: ${parsed.data.role}
+서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 말고, 게임 아이디어는 game으로 분류하세요." : "교사와 일반인에게는 game을 추천하지 말고, 자동화 아이디어는 software로 분류하세요."}
 아이디어: ${parsed.data.idea}
 
 다음 JSON 형식으로 질문 3~5개만 반환하세요:
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
 답변에 없는 요구사항은 임의로 핵심 기능에 넣지 말고, MVP 범위를 작게 유지하세요.
 
 사용자 역할: ${parsed.data.role}
+서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 마세요. 게임 아이디어라면 game을 추천하세요." : "교사와 일반인에게는 game을 추천하지 마세요. 파일 처리나 반복 업무라면 software를 추천하세요."}
 아이디어: ${parsed.data.idea}
 
 인터뷰:

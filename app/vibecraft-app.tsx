@@ -15,6 +15,7 @@ import {
   ExternalLink,
   FileText,
   Flag,
+  Gamepad2,
   Layers3,
   Lightbulb,
   MessageSquare,
@@ -33,6 +34,7 @@ import {
   baseChecklist,
   conceptCards,
   deploymentChecks,
+  gameChecklist,
   promptTemplates,
   serviceTypes,
   softwareChecklist,
@@ -215,6 +217,26 @@ const taskHelpTemplates: Record<
     { title: "기대 결과 적기", description: "처리 후 어떤 결과가 나와야 하는지 적어요.", check: "입력과 기대 결과를 나란히 비교할 수 있어야 해요." },
     { title: "예외 사례 하나 준비하기", description: "비어 있거나 잘못된 입력도 하나 준비해요.", check: "성공과 실패 사례가 각각 하나씩 있어야 해요." },
   ],
+  "game-rule": [
+    { title: "플레이 목표 정하기", description: "플레이어가 무엇을 하면 이기는지 정해요.", check: "성공 조건을 한 문장으로 설명할 수 있어야 해요." },
+    { title: "조작 방법 정하기", description: "키보드, 마우스 또는 터치 중 하나를 골라요.", check: "플레이어가 눌러야 할 키나 화면 영역이 명확해야 해요." },
+    { title: "실패와 종료 정하기", description: "언제 한 판이 끝나는지 정해요.", check: "성공과 실패 조건이 각각 하나씩 있어야 해요." },
+  ],
+  "game-control": [
+    { title: "입력 하나 연결하기", description: "키 하나 또는 터치 한 번에 움직임을 연결해요.", check: "입력할 때 화면의 게임 요소가 바로 반응해야 해요." },
+    { title: "화면 밖 이동 막기", description: "캐릭터나 요소가 게임 영역을 벗어나지 않게 해요.", check: "계속 조작해도 화면 안에 남아야 해요." },
+    { title: "다른 기기 확인하기", description: "키보드와 터치 환경에서 각각 조작해요.", check: "선택한 기기에서 입력이 끊기지 않아야 해요." },
+  ],
+  "game-loop": [
+    { title: "게임 시작 연결하기", description: "시작 버튼을 누르면 플레이 상태로 바뀌게 해요.", check: "새 게임이 항상 같은 초기 상태에서 시작해야 해요." },
+    { title: "성공과 실패 판정하기", description: "정한 규칙에 따라 결과를 계산해요.", check: "조건을 만족하면 즉시 결과가 표시되어야 해요." },
+    { title: "한 판 끝내기", description: "결과 화면에서 조작을 멈추고 다시 하기를 제공해요.", check: "시작부터 결과까지 한 판을 완료할 수 있어야 해요." },
+  ],
+  "game-feedback": [
+    { title: "현재 상태 보여주기", description: "점수, 남은 시간 또는 기회를 표시해요.", check: "플레이 중 값이 바로 갱신되어야 해요." },
+    { title: "결과 알려주기", description: "성공 또는 실패 이유를 짧게 보여줘요.", check: "플레이어가 왜 끝났는지 알 수 있어야 해요." },
+    { title: "다시 하기 연결하기", description: "버튼 한 번으로 초기 상태로 돌아가요.", check: "새로고침 없이 새 게임을 시작할 수 있어야 해요." },
+  ],
   "core-process": [
     { title: "입력 정하기", description: "자동화가 받을 자료의 형태를 하나로 정해요.", check: "입력 예시를 실제 값으로 보여줄 수 있어야 해요." },
     { title: "처리 한 단계 만들기", description: "가장 중요한 변환이나 계산부터 구현해요.", check: "테스트 입력으로 결과 하나가 나와야 해요." },
@@ -317,6 +339,13 @@ const serviceRoadmaps: Record<ServiceType, string[]> = {
     "서로 다른 자료로 실행 결과를 반복 확인합니다.",
     "저장소 또는 다운로드 주소와 실행 방법을 공유합니다.",
   ],
+  game: [
+    "플레이어의 목표와 조작 방법을 한 문장으로 정합니다.",
+    "시작 → 플레이 → 결과로 이어지는 한 판을 먼저 만듭니다.",
+    "점수, 성공과 실패 조건, 다시 하기를 연결합니다.",
+    "키보드와 터치 조작을 각각 확인합니다.",
+    "공개 URL을 친구에게 보내 한 판을 직접 해보게 합니다.",
+  ],
 };
 
 const toolLogos: Record<ToolSlug, string> = {
@@ -328,6 +357,7 @@ const toolLogos: Record<ToolSlug, string> = {
 const serviceIcons: Record<ServiceType, LucideIcon> = {
   web: Code2,
   "mobile-web": Smartphone,
+  game: Gamepad2,
   software: Terminal,
 };
 
@@ -340,12 +370,14 @@ const toolThemes: Record<ToolSlug, string> = {
 const serviceThemes: Record<ServiceType, string> = {
   web: "tile-blue",
   "mobile-web": "tile-violet",
+  game: "tile-cyan",
   software: "tile-amber",
 };
 
 const serviceLayouts: Record<ServiceType, string> = {
   web: "lg:col-span-5",
   "mobile-web": "lg:col-span-4",
+  game: "lg:col-span-3",
   software: "lg:col-span-3",
 };
 
@@ -375,6 +407,14 @@ const serviceLearningInfo: Record<
     strength: "앱스토어 심사 없이 배포하면서도 앱에 가까운 화면과 조작 경험을 만들 수 있습니다.",
     caution: "iPhone과 Android의 브라우저 기능 차이, 권한 요청, 작은 화면과 느린 네트워크를 확인해야 합니다.",
     firstStep: "가장 작은 스마트폰 화면에서 첫 행동과 완료 화면을 먼저 연결하세요.",
+  },
+  game: {
+    shortFit: "규칙·조작·점수로 한 판을 완성하고 싶을 때",
+    fits: ["친구와 링크로 바로 플레이", "키보드나 터치로 직접 조작", "점수와 성공·실패 결과가 중요"],
+    result: "설치 없이 브라우저에서 바로 플레이하는 게임 URL",
+    strength: "작은 규칙 하나부터 만들고 바로 플레이하며 재미와 난이도를 빠르게 확인할 수 있습니다.",
+    caution: "그래픽을 먼저 늘리기보다 한 판이 처음부터 끝까지 작동하는지와 조작 반응을 먼저 확인해야 합니다.",
+    firstStep: "플레이어가 한 번 조작하고 결과를 확인하는 가장 작은 게임 규칙부터 만드세요.",
   },
   software: {
     shortFit: "파일 처리·반복 업무·로컬 실행이 핵심일 때",
@@ -836,27 +876,36 @@ export function VibeCraftApp() {
   const safePhase = (phaseOrder as readonly string[]).includes(phase) ? phase : "start";
   const activeRole = role ?? "student";
   const activeTool = selectedTool ?? recommendation?.recommendedTool ?? "codex";
+  const availableServiceTypes = serviceTypes.filter((service) =>
+    activeRole === "student" ? service.id !== "software" : service.id !== "game",
+  );
+  const roleRecommendedServiceType =
+    activeRole === "student" && recommendation?.recommendedServiceType === "software"
+      ? "game"
+      : activeRole !== "student" && recommendation?.recommendedServiceType === "game"
+        ? "software"
+        : recommendation?.recommendedServiceType;
   const activeServiceType =
-    selectedServiceType ?? recommendation?.recommendedServiceType ?? "web";
+    selectedServiceType ?? roleRecommendedServiceType ?? "web";
   const selectedToolInfo = tools.find((tool) => tool.slug === activeTool) ?? tools[0];
   const recommendedToolInfo =
     tools.find((tool) => tool.slug === recommendation?.recommendedTool) ?? tools[0];
   const selectedServiceInfo =
     serviceTypes.find((item) => item.id === activeServiceType) ?? serviceTypes[0];
   const recommendedServiceInfo =
-    serviceTypes.find((item) => item.id === recommendation?.recommendedServiceType) ??
+    serviceTypes.find((item) => item.id === roleRecommendedServiceType) ??
     serviceTypes[0];
   const displayedStack =
-    selectedServiceType && selectedServiceType !== recommendation?.recommendedServiceType
+    selectedServiceType && selectedServiceType !== roleRecommendedServiceType
       ? selectedServiceInfo.stack
       : recommendation?.recommendedStack ?? selectedServiceInfo.stack;
   const activeStackItem =
     selectedStackItem && displayedStack.includes(selectedStackItem) ? selectedStackItem : null;
   const activeStackGuide = activeStackItem ? getStackGuide(activeStackItem) : null;
   const checklistItems = useMemo(() => {
-    return activeServiceType === "software"
-      ? softwareChecklist
-      : baseChecklist;
+    if (activeServiceType === "software") return softwareChecklist;
+    if (activeServiceType === "game") return gameChecklist;
+    return baseChecklist;
   }, [activeServiceType]);
   const deploymentItems = useMemo(() => {
     const stack = new Set(displayedStack);
@@ -873,7 +922,7 @@ export function VibeCraftApp() {
     });
   }, [activeServiceType, displayedStack]);
   const displayedRoadmap =
-    selectedServiceType && selectedServiceType !== recommendation?.recommendedServiceType
+    selectedServiceType && selectedServiceType !== roleRecommendedServiceType
       ? serviceRoadmaps[selectedServiceType]
       : recommendation?.roadmap ?? serviceRoadmaps[activeServiceType];
   const verifiedDeploymentUrl = useMemo(() => validWebUrl(deploymentUrl), [deploymentUrl]);
@@ -968,6 +1017,14 @@ export function VibeCraftApp() {
 
   function handleRoleChange(nextRole: Role) {
     setRole(nextRole);
+    if (
+      (nextRole === "student" && selectedServiceType === "software") ||
+      (nextRole !== "student" && selectedServiceType === "game")
+    ) {
+      setSelectedServiceType(null);
+      setChecklistStatuses({});
+      setDeploymentStatuses({});
+    }
     if (interviewQuestions.length) {
       setInterviewQuestions([]);
       setInterviewAnswers({});
@@ -2199,9 +2256,9 @@ export function VibeCraftApp() {
               <p className="mt-1 text-sm leading-6 text-ink">{recommendation.reasons[0]}</p>
             </div>
             <div className="stagger mt-6 grid gap-3 lg:grid-cols-12">
-              {serviceTypes.map((service, index) => {
+              {availableServiceTypes.map((service, index) => {
                 const selected = selectedServiceType === service.id;
-                const recommended = recommendation.recommendedServiceType === service.id;
+                const recommended = roleRecommendedServiceType === service.id;
                 const Icon = serviceIcons[service.id];
                 const learning = serviceLearningInfo[service.id];
                 return (
