@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, Check, Cloud, Loader2, Sparkles, X } from "lucide-react";
 import {
@@ -10,32 +11,30 @@ import {
   type PhaseId,
   type PhaseProgress,
 } from "@/lib/vibecraft-navigation";
+import vibecraftLogo from "./vibecraft-logo.png";
 
 export function CraftMark({ className = "h-10 w-10" }: { className?: string }) {
   return (
-    <svg
+    <Image
+      alt=""
       aria-hidden="true"
-      className={className}
-      fill="none"
-      viewBox="0 0 44 44"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="44" height="44" rx="14" fill="rgb(var(--color-signal))" />
-      <path d="M12.5 14.5h12l7 7v9h-19z" fill="none" stroke="white" strokeWidth="2.2" />
-      <path d="M24.5 14.5v7h7M17 26h9m-3-3 3 3-3 3" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
-    </svg>
+      className={`${className} object-contain drop-shadow-[0_5px_10px_rgba(164,62,35,.18)]`}
+      height={200}
+      priority
+      src={vibecraftLogo}
+      width={214}
+    />
   );
 }
 
 export function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3">
-      <CraftMark className={compact ? "h-8 w-8" : "h-10 w-10"} />
+    <div className="flex items-center gap-3.5">
+      <CraftMark className={compact ? "h-9 w-9" : "h-11 w-11"} />
       <div>
-        <p className={`${compact ? "text-base" : "text-xl"} font-extrabold tracking-[-0.035em] text-ink`}>
+        <p className={`${compact ? "text-xl" : "text-2xl"} font-sans font-black leading-none tracking-[-0.045em] text-signal-ink`}>
           VibeCraft
         </p>
-        {!compact ? <p className="text-[11px] font-semibold text-muted">아이디어를 완성까지</p> : null}
       </div>
     </div>
   );
