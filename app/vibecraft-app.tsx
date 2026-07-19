@@ -101,6 +101,200 @@ const initialChatMessages: ChatMessage[] = [
 
 const MAX_PLAN_CHARACTERS = 200_000;
 
+type ErrorPlatform = "unknown" | "windows" | "macos";
+type ErrorTextSize = "normal" | "large" | "xlarge";
+
+type BeginnerSetupStep = {
+  id: string;
+  title: string;
+  description: string;
+  check: string;
+};
+
+const beginnerGitSetupSteps: BeginnerSetupStep[] = [
+  {
+    id: "git-download",
+    title: "Git 내려받기",
+    description: "Git 설치 파일을 내려받아요.",
+    check: "다운로드 폴더에 Git 설치 파일이 보이면 돼요.",
+  },
+  {
+    id: "git-install",
+    title: "Git 설치하기",
+    description: "내려받은 파일을 열고 설치를 끝까지 진행해요.",
+    check: "설치 완료 화면을 확인한 뒤 터미널을 새로 열어요.",
+  },
+  {
+    id: "git-version",
+    title: "설치 확인하기",
+    description: "터미널에서 git --version을 실행해요.",
+    check: "git version으로 시작하는 버전 번호가 나오면 설치된 상태예요.",
+  },
+  {
+    id: "github-account",
+    title: "GitHub 계정 만들기",
+    description: "사용할 아이디와 이메일로 GitHub에 가입해요.",
+    check: "로그인되고 이메일 인증까지 끝났는지 확인해요.",
+  },
+  {
+    id: "git-identity",
+    title: "이름과 이메일 연결하기",
+    description: "Git에 작업 기록용 이름과 이메일을 등록해요.",
+    check: "git config --global --list에 user.name과 user.email이 보여야 해요.",
+  },
+  {
+    id: "git-ready",
+    title: "프로젝트 연결 준비하기",
+    description: "프로젝트 폴더에서 Git을 사용할 준비를 해요.",
+    check: "현재 폴더와 GitHub 계정이 준비됐으면 다음 제작 단계로 갈 수 있어요.",
+  },
+];
+
+const taskHelpTemplates: Record<
+  string,
+  Array<Omit<BeginnerSetupStep, "id">>
+> = {
+  "git-install": [
+    { title: "Git 내려받기", description: "운영체제에 맞는 Git 설치 파일을 받아요.", check: "다운로드 폴더에 설치 파일이 보이면 돼요." },
+    { title: "Git 설치하기", description: "설치 파일을 열고 기본 설정으로 설치해요.", check: "설치 완료 후 터미널을 새로 열어요." },
+    { title: "설치 확인하기", description: "터미널에서 git --version을 실행해요.", check: "git version으로 시작하는 번호가 나오면 정상이에요." },
+  ],
+  "github-account": [
+    { title: "GitHub 가입하기", description: "사용할 아이디와 이메일로 계정을 만들어요.", check: "GitHub에 로그인할 수 있어야 해요." },
+    { title: "이메일 인증하기", description: "GitHub에서 보낸 인증 메일을 확인해요.", check: "계정 설정에서 이메일이 인증됨으로 보여야 해요." },
+    { title: "Git 사용자 정보 연결하기", description: "Git에 기록할 이름과 이메일을 등록해요.", check: "git config --global --list에 user.name과 user.email이 보여야 해요." },
+  ],
+  "project-create": [
+    { title: "작업 폴더 정하기", description: "프로젝트를 저장할 빈 폴더를 정해요.", check: "폴더 위치를 다시 찾을 수 있으면 돼요." },
+    { title: "터미널 열기", description: "정한 폴더에서 터미널을 열어요.", check: "터미널의 현재 경로가 작업 폴더와 같아야 해요." },
+    { title: "프로젝트 만들기", description: "안내된 생성 명령어를 한 번 실행해요.", check: "package.json과 app 폴더가 생기면 정상이에요." },
+    { title: "프로젝트 폴더 들어가기", description: "생성된 프로젝트 폴더로 이동해요.", check: "터미널 경로 끝에 프로젝트 이름이 보여야 해요." },
+  ],
+  "local-run": [
+    { title: "필요 파일 설치하기", description: "프로젝트 폴더에서 npm install을 실행해요.", check: "명령이 오류 없이 끝나면 돼요." },
+    { title: "개발 서버 실행하기", description: "npm run dev를 실행해요.", check: "Local 주소가 터미널에 표시되어야 해요." },
+    { title: "브라우저에서 열기", description: "터미널에 나온 Local 주소를 브라우저에 입력해요.", check: "프로젝트 첫 화면이 열리면 정상이에요." },
+    { title: "첫 오류 확인하기", description: "화면이 안 열리면 터미널의 첫 오류부터 확인해요.", check: "실행 명령과 첫 오류 문장을 함께 준비해요." },
+  ],
+  "first-screen": [
+    { title: "첫 행동 정하기", description: "사용자가 화면에서 가장 먼저 할 행동 하나를 정해요.", check: "버튼이나 입력 행동을 한 문장으로 말할 수 있어야 해요." },
+    { title: "화면 파일 찾기", description: "첫 화면을 담당하는 app/page 파일을 열어요.", check: "브라우저에 보이는 문구와 같은 코드를 찾으면 돼요." },
+    { title: "한 부분만 만들기", description: "제목과 핵심 버튼부터 작은 단위로 수정해요.", check: "저장 후 브라우저 화면이 바뀌어야 해요." },
+    { title: "핵심 행동 확인하기", description: "버튼이나 입력이 예상대로 작동하는지 눌러봐요.", check: "오류 없이 다음 화면이나 결과가 나타나야 해요." },
+  ],
+  "deploy-vercel": [
+    { title: "GitHub에 코드 올리기", description: "프로젝트 저장소에 최신 코드를 올려요.", check: "GitHub에서 최근 파일과 변경 기록이 보여야 해요." },
+    { title: "Vercel에 저장소 연결하기", description: "Vercel에서 GitHub 저장소를 선택해 가져와요.", check: "프로젝트 이름과 저장소 이름이 연결되어 보여야 해요." },
+    { title: "환경변수 확인하기", description: "필요한 키가 있다면 Vercel 설정에 등록해요.", check: "변수 이름이 빠짐없이 등록되어야 해요." },
+    { title: "배포 주소 열기", description: "배포를 실행하고 생성된 주소를 열어요.", check: "공개 주소에서 첫 화면과 핵심 행동이 작동해야 해요." },
+  ],
+  "neon-db": [
+    { title: "Neon 프로젝트 만들기", description: "Neon에서 새 데이터베이스 프로젝트를 만들어요.", check: "프로젝트와 데이터베이스 이름이 보여야 해요." },
+    { title: "연결 주소 보관하기", description: "연결 문자열을 코드가 아닌 환경변수 파일에 넣어요.", check: "DATABASE_URL 값이 .env.local에 있고 화면에는 노출되지 않아야 해요." },
+    { title: "테이블 준비하기", description: "프로젝트에 필요한 테이블 또는 스키마를 만들어요.", check: "Neon 화면에서 테이블을 확인할 수 있어야 해요." },
+    { title: "저장과 조회 확인하기", description: "테스트 자료 하나를 저장하고 다시 불러와요.", check: "새로고침 후에도 같은 자료가 보여야 해요." },
+  ],
+  "mobile-check": [
+    { title: "작은 화면 열기", description: "브라우저 개발자 도구에서 모바일 화면을 선택해요.", check: "화면 폭이 휴대폰 크기로 바뀌어야 해요." },
+    { title: "위에서 아래로 확인하기", description: "텍스트, 카드, 버튼이 잘리거나 겹치는지 봐요.", check: "가로 스크롤 없이 내용을 읽을 수 있어야 해요." },
+    { title: "핵심 행동 눌러보기", description: "입력창과 버튼을 실제로 사용해요.", check: "키보드가 열려도 버튼과 입력 내용이 보여야 해요." },
+  ],
+  "error-review": [
+    { title: "같은 오류 다시 만들기", description: "오류가 난 행동이나 명령을 한 번만 다시 실행해요.", check: "어떤 행동 직후 오류가 나는지 알아야 해요." },
+    { title: "첫 오류 찾기", description: "긴 로그에서 가장 먼저 나온 오류 문장을 찾아요.", check: "파일명, 줄 번호, 오류 문장을 준비해요." },
+    { title: "수정 후 다시 확인하기", description: "한 가지 해결책만 적용하고 같은 행동을 반복해요.", check: "기존 오류가 사라졌거나 다른 오류로 바뀌었는지 확인해요." },
+  ],
+  "final-check": [
+    { title: "빌드 확인하기", description: "공개 전에 npm run build를 실행해요.", check: "빌드가 오류 없이 완료되어야 해요." },
+    { title: "핵심 흐름 확인하기", description: "처음 접속부터 핵심 결과까지 직접 진행해요.", check: "중간에 멈추거나 빈 화면이 없어야 해요." },
+    { title: "비밀정보 확인하기", description: "키와 비밀번호가 코드나 화면에 보이지 않는지 확인해요.", check: "비밀값은 환경변수에만 있어야 해요." },
+    { title: "공개 주소 확인하기", description: "로그아웃 상태나 다른 기기에서 주소를 열어요.", check: "다른 사람도 같은 첫 화면을 볼 수 있어야 해요." },
+  ],
+  "automation-sample": [
+    { title: "실제 입력 하나 고르기", description: "자동화할 실제 자료 하나를 복사본으로 준비해요.", check: "개인정보를 지운 테스트 자료가 있어야 해요." },
+    { title: "기대 결과 적기", description: "처리 후 어떤 결과가 나와야 하는지 적어요.", check: "입력과 기대 결과를 나란히 비교할 수 있어야 해요." },
+    { title: "예외 사례 하나 준비하기", description: "비어 있거나 잘못된 입력도 하나 준비해요.", check: "성공과 실패 사례가 각각 하나씩 있어야 해요." },
+  ],
+  "core-process": [
+    { title: "입력 정하기", description: "자동화가 받을 자료의 형태를 하나로 정해요.", check: "입력 예시를 실제 값으로 보여줄 수 있어야 해요." },
+    { title: "처리 한 단계 만들기", description: "가장 중요한 변환이나 계산부터 구현해요.", check: "테스트 입력으로 결과 하나가 나와야 해요." },
+    { title: "결과 저장하기", description: "화면, 파일 또는 데이터로 결과를 남겨요.", check: "실행이 끝난 뒤 결과를 다시 확인할 수 있어야 해요." },
+  ],
+  "failure-message": [
+    { title: "실패 상황 정하기", description: "빈 입력과 잘못된 입력 등 실패 사례를 정해요.", check: "재현 가능한 실패 사례가 있어야 해요." },
+    { title: "쉬운 안내문 쓰기", description: "문제와 다음 행동을 함께 알려주는 문장을 만들어요.", check: "사용자가 무엇을 고쳐야 하는지 알 수 있어야 해요." },
+    { title: "다시 시도 확인하기", description: "안내에 따라 수정한 뒤 다시 실행해요.", check: "페이지를 새로 열지 않아도 다시 시도할 수 있어야 해요." },
+  ],
+  "share-runbook": [
+    { title: "필요 조건 적기", description: "설치해야 할 프로그램과 계정을 적어요.", check: "처음 보는 사람도 준비물을 알 수 있어야 해요." },
+    { title: "실행 순서 적기", description: "폴더 열기부터 실행까지 명령을 순서대로 적어요.", check: "명령어를 그대로 복사해 실행할 수 있어야 해요." },
+    { title: "다른 사람에게 확인받기", description: "설명만 보고 한 번 실행해 달라고 요청해요.", check: "추가 설명 없이 결과까지 도달해야 해요." },
+  ],
+  "mobile-layout": [
+    { title: "대표 화면 크기 선택하기", description: "휴대폰 크기로 공개 주소를 열어요.", check: "화면이 기기 너비 안에 들어와야 해요." },
+    { title: "겹침과 잘림 확인하기", description: "긴 문장, 카드, 버튼을 위에서 아래로 봐요.", check: "가로 스크롤과 잘린 버튼이 없어야 해요." },
+    { title: "터치로 진행하기", description: "손가락으로 핵심 흐름을 끝까지 진행해요.", check: "모든 버튼을 쉽게 누를 수 있어야 해요." },
+  ],
+  "button-flow": [
+    { title: "시작 지점 정하기", description: "처음 방문한 사용자가 누를 첫 버튼을 정해요.", check: "설명 없이도 첫 행동이 보여야 해요." },
+    { title: "끝까지 진행하기", description: "입력부터 결과까지 중간 단계를 모두 실행해요.", check: "막히는 화면이나 반응 없는 버튼이 없어야 해요." },
+    { title: "새로고침 후 반복하기", description: "처음 상태에서 같은 흐름을 다시 실행해요.", check: "두 번째 실행도 같은 결과가 나와야 해요." },
+  ],
+  "secret-safe": [
+    { title: "비밀값 목록 만들기", description: "API 키, 토큰, DB 주소를 확인해요.", check: "공개하면 안 되는 값의 이름을 알아야 해요." },
+    { title: "코드에서 제거하기", description: "비밀값을 .env.local 또는 배포 환경변수로 옮겨요.", check: "코드 검색에서 실제 비밀값이 나오지 않아야 해요." },
+    { title: "공개 화면 확인하기", description: "브라우저 소스와 오류 메시지에 값이 보이는지 봐요.", check: "비밀값의 일부도 화면에 노출되지 않아야 해요." },
+  ],
+  "env-ready": [
+    { title: "필요한 변수 이름 모으기", description: ".env.local에 쓰는 변수 이름을 확인해요.", check: "필요한 이름 목록이 준비되어야 해요." },
+    { title: "배포 환경에 등록하기", description: "Vercel 환경변수에 같은 이름과 값을 등록해요.", check: "이름의 대소문자까지 로컬과 같아야 해요." },
+    { title: "다시 배포하기", description: "환경변수 저장 후 새 배포를 실행해요.", check: "공개 주소에서 관련 기능이 작동해야 해요." },
+  ],
+  "db-ready": [
+    { title: "공개 DB 주소 확인하기", description: "배포 환경의 DATABASE_URL을 확인해요.", check: "로컬이 아닌 공개 환경에도 등록되어야 해요." },
+    { title: "저장 테스트하기", description: "공개 주소에서 테스트 자료 하나를 저장해요.", check: "성공 메시지나 저장된 결과가 보여야 해요." },
+    { title: "다시 불러오기", description: "새로고침하거나 다시 접속해 자료를 확인해요.", check: "저장한 자료가 그대로 남아 있어야 해요." },
+  ],
+  "first-user": [
+    { title: "처음 보는 사람 정하기", description: "프로젝트 설명을 듣지 않은 사람에게 주소를 전달해요.", check: "테스트할 사람 한 명이 있어야 해요." },
+    { title: "말하지 않고 관찰하기", description: "첫 행동부터 결과까지 스스로 진행하게 해요.", check: "어디서 멈추거나 질문하는지 기록해요." },
+    { title: "한 가지씩 고치기", description: "가장 먼저 막힌 문구나 버튼부터 수정해요.", check: "같은 지점에서 다시 막히지 않아야 해요." },
+  ],
+};
+
+function helpStepsForItem(item: ChecklistItem): BeginnerSetupStep[] {
+  const templates = taskHelpTemplates[item.id] ?? [
+    { title: "목표 확인하기", description: item.description, check: `${item.title}의 완료 모습을 한 문장으로 말할 수 있어야 해요.` },
+    { title: "현재 상태 확인하기", description: "지금까지 한 행동과 마지막으로 정상 작동한 지점을 적어요.", check: "막히기 직전까지의 순서를 다시 설명할 수 있어야 해요." },
+    { title: "문제 다시 만들기", description: "같은 행동을 한 번만 반복하고 화면의 메시지를 확인해요.", check: "재현 순서와 실제 메시지를 함께 준비해야 해요." },
+  ];
+
+  return templates.map((step, index) => ({
+    ...step,
+    id: `${item.id}-help-${index + 1}`,
+  }));
+}
+
+function errorDetailsFromDraft(draft: string): string {
+  const markers = [
+    "실제로 보이는 화면 또는 에러:\n",
+    "실행한 명령어 또는 에러 메시지:\n",
+  ];
+  const marker = markers.find((candidate) => draft.includes(candidate));
+  return marker ? draft.slice(draft.indexOf(marker) + marker.length).trimStart() : draft.trim();
+}
+
+function beginnerStepErrorDraft(step: BeginnerSetupStep, details = ""): string {
+  return [
+    `현재 준비 단계: ${step.title}`,
+    `하려던 일: ${step.description}`,
+    `정상 확인 기준: ${step.check}`,
+    "",
+    "실제로 보이는 화면 또는 에러:",
+    details,
+  ].join("\n");
+}
+
 const serviceRoadmaps: Record<ServiceType, string[]> = {
   web: [
     "핵심 사용자가 처음 만나는 화면과 행동을 정합니다.",
@@ -612,6 +806,13 @@ export function VibeCraftApp() {
   const [termSearch, setTermSearch] = useState("");
   const [promptSearch, setPromptSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorPlatform, setErrorPlatform] = useState<ErrorPlatform>("unknown");
+  const [errorTextSize, setErrorTextSize] = usePersistentState<ErrorTextSize>(
+    "vc-error-text-size",
+    "normal",
+  );
+  const [errorHelpItem, setErrorHelpItem] = useState<ChecklistItem | null>(null);
+  const [selectedErrorStepId, setSelectedErrorStepId] = useState<string | null>(null);
   const [errorSolution, setErrorSolution] = useState<ErrorSolution | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
@@ -626,6 +827,11 @@ export function VibeCraftApp() {
   });
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const activeErrorSteps = errorHelpItem
+    ? helpStepsForItem(errorHelpItem)
+    : beginnerGitSetupSteps;
+  const selectedErrorStep =
+    activeErrorSteps.find((step) => step.id === selectedErrorStepId) ?? null;
 
   const safePhase = (phaseOrder as readonly string[]).includes(phase) ? phase : "start";
   const activeRole = role ?? "student";
@@ -700,11 +906,7 @@ export function VibeCraftApp() {
   );
 
   const currentMission = useMemo(
-    () =>
-      checklistItems.find((item) => checklistStatuses[item.id] === "active") ??
-      checklistItems.find((item) => (checklistStatuses[item.id] ?? "pending") === "pending") ??
-      checklistItems.find((item) => checklistStatuses[item.id] === "blocked") ??
-      null,
+    () => checklistItems.find((item) => checklistStatuses[item.id] !== "done") ?? null,
     [checklistItems, checklistStatuses],
   );
 
@@ -996,6 +1198,15 @@ export function VibeCraftApp() {
   }
 
   function setChecklist(item: ChecklistItem, status: ChecklistStatus) {
+    const itemIndex = checklistItems.findIndex((candidate) => candidate.id === item.id);
+    const hasIncompletePrevious = checklistItems
+      .slice(0, itemIndex)
+      .some((candidate) => checklistStatuses[candidate.id] !== "done");
+    if (itemIndex > 0 && hasIncompletePrevious) {
+      setNotice("이전 작업을 먼저 완료해야 이 작업을 시작할 수 있어요.");
+      return;
+    }
+
     setChecklistStatuses((current) => {
       const next = { ...current };
       if (status === "active") {
@@ -1017,18 +1228,31 @@ export function VibeCraftApp() {
   }
 
   function setDeployCheck(item: ChecklistItem, status: ChecklistStatus) {
+    const itemIndex = deploymentItems.findIndex((candidate) => candidate.id === item.id);
+    const buildIncomplete = checklistItems.some(
+      (candidate) => checklistStatuses[candidate.id] !== "done",
+    );
+    const hasIncompletePrevious = deploymentItems
+      .slice(0, itemIndex)
+      .some((candidate) => deploymentStatuses[candidate.id] !== "done");
+    if (buildIncomplete || (itemIndex > 0 && hasIncompletePrevious)) {
+      setNotice(
+        buildIncomplete
+          ? "전체 제작 작업을 먼저 완료해야 공개 전 점검을 시작할 수 있어요."
+          : "이전 점검을 먼저 완료해야 다음 점검을 시작할 수 있어요.",
+      );
+      return;
+    }
+
     setDeploymentStatuses((current) => ({ ...current, [item.id]: status }));
     if (status === "blocked") openBlockedItem(item);
   }
 
   function openBlockedItem(item: ChecklistItem) {
-    setErrorMessage(
-      "현재 작업: " +
-        item.title +
-        "\n하려던 일: " +
-        item.description +
-        "\n\n실행한 명령어 또는 에러 메시지:\n",
-    );
+    const firstStep = helpStepsForItem(item)[0];
+    setErrorHelpItem(item);
+    setSelectedErrorStepId(firstStep.id);
+    setErrorMessage(beginnerStepErrorDraft(firstStep));
     setErrorSolution(null);
     setResource("error");
   }
@@ -1046,6 +1270,20 @@ export function VibeCraftApp() {
         role: activeRole,
         selectedTool: activeTool,
         currentStep: phaseMetadata[safePhase].label,
+        platform: errorPlatform,
+        taskContext: errorHelpItem
+          ? {
+              title: errorHelpItem.title,
+              description: errorHelpItem.description,
+            }
+          : undefined,
+        troubleshootingStep: selectedErrorStep
+          ? {
+              title: selectedErrorStep.title,
+              description: selectedErrorStep.description,
+              check: selectedErrorStep.check,
+            }
+          : undefined,
         errorMessage,
       });
       setErrorSolution(result);
@@ -2191,7 +2429,7 @@ export function VibeCraftApp() {
 
         <div className="mt-14">
           <SectionHeading
-            description="위에서 아래로 한 단계씩 진행하세요. 진행 중인 작업은 하나만 두고, 막히면 해당 문맥을 해결 도우미로 전달합니다."
+            description="위에서 아래로 한 단계씩 진행하세요. 이전 작업을 완료해야 다음 작업이 열리며, 막히면 해당 작업의 순서를 해결 도우미로 전달합니다."
             title="전체 작업"
           />
           <div className="technology-flow stagger mt-5">
@@ -2200,6 +2438,9 @@ export function VibeCraftApp() {
                 index={index}
                 item={item}
                 key={item.id}
+                locked={checklistItems
+                  .slice(0, index)
+                  .some((previousItem) => checklistStatuses[previousItem.id] !== "done")}
                 onChange={(status) => setChecklist(item, status)}
                 showSequence
                 status={checklistStatuses[item.id] ?? "pending"}
@@ -2315,6 +2556,16 @@ export function VibeCraftApp() {
                   index={index}
                   item={item}
                   key={item.id}
+                  locked={
+                    checklistItems.some(
+                      (buildItem) => checklistStatuses[buildItem.id] !== "done",
+                    ) ||
+                    deploymentItems
+                      .slice(0, index)
+                      .some(
+                        (previousItem) => deploymentStatuses[previousItem.id] !== "done",
+                      )
+                  }
                   onChange={(status) => setDeployCheck(item, status)}
                   showSequence
                   status={deploymentStatuses[item.id] ?? "pending"}
@@ -2500,79 +2751,168 @@ export function VibeCraftApp() {
 
     if (resource === "error") {
       return (
-        <div>
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-ink">
-              에러 메시지 또는 막힌 상황
-            </span>
-            <span className="mb-3 block text-xs leading-5 text-muted">
-              API 키와 DB 주소는 지우고, 실행한 명령어와 에러의 첫 부분을 함께 적어주세요.
-            </span>
-            <textarea
-              className="field min-h-52 resize-y font-mono text-xs"
-              onChange={(event) => setErrorMessage(event.target.value)}
-              placeholder="예: npm run build 실행 후 Module not found..."
-              value={errorMessage}
-            />
-          </label>
-          <PrimaryButton
-            className="mt-4 w-full"
-            disabled={busy === "error"}
-            icon={Wrench}
-            loading={busy === "error"}
-            onClick={solveCurrentError}
-          >
-            해결 순서 만들기
-          </PrimaryButton>
+        <div className={`error-helper error-helper-text--${errorTextSize} grid gap-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start`}>
+          <section>
+            <p className="error-helper-caption font-mono font-bold uppercase tracking-[0.16em] text-signal-ink">
+              {errorHelpItem ? "선택한 전체 작업의 해결 순서" : "처음 시작하는 분을 위한 순서"}
+            </p>
+            <h3 className="error-helper-title type-title mt-2 text-ink">
+              {errorHelpItem ? `${errorHelpItem.title}, 이 순서대로 확인하세요` : "Git 준비, 여기까지 확인했나요?"}
+            </h3>
+            <p className="error-helper-copy mt-2 leading-6 text-muted">
+              {errorHelpItem
+                ? `${errorHelpItem.description} 위에서부터 확인하고, 진행되지 않는 단계를 누르세요.`
+                : "위에서부터 확인하고, 진행되지 않는 단계를 누르세요. GitHub 가입과 Git 설치는 서로 다른 작업이에요."}
+            </p>
+            <ol className="mt-5 space-y-2" aria-label={errorHelpItem ? `${errorHelpItem.title} 해결 순서` : "Git 시작 준비 순서"}>
+              {activeErrorSteps.map((step, index) => {
+                const selected = selectedErrorStepId === step.id;
+                return (
+                  <li key={step.id}>
+                    <button
+                      aria-pressed={selected}
+                      className={
+                        "group grid w-full grid-cols-[34px_minmax(0,1fr)] gap-3 rounded-xl border px-3.5 py-3 text-left transition-all duration-300 active:scale-[0.99] " +
+                        (selected
+                          ? "border-warning/45 bg-warning/10 shadow-sm"
+                          : "border-line bg-canvas/60 hover:border-signal/30 hover:bg-signal-soft/60")
+                      }
+                      onClick={() => {
+                        setSelectedErrorStepId(step.id);
+                        setErrorMessage((current) =>
+                          beginnerStepErrorDraft(step, errorDetailsFromDraft(current)),
+                        );
+                        setErrorSolution(null);
+                      }}
+                      type="button"
+                    >
+                      <span
+                        className={
+                          "error-helper-caption grid h-[30px] w-[30px] place-items-center rounded-full font-mono font-black " +
+                          (selected ? "bg-warning text-white" : "bg-surface text-signal-ink shadow-sm")
+                        }
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="error-helper-copy block font-extrabold text-ink">{step.title}</span>
+                        <span className="error-helper-detail mt-0.5 block leading-5 text-muted">{step.description}</span>
+                        <span className="error-helper-caption mt-1 block font-semibold leading-5 text-signal-ink">
+                          확인: {step.check}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
 
-          {errorSolution ? (
-            <div className="mt-9 border-t border-line pt-7">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-danger">
-                분석 결과
-              </p>
-              <h3 className="type-title mt-2 text-ink">
-                {errorSolution.summary}
-              </h3>
-              <h4 className="type-label mt-7 text-ink">가능성이 높은 원인</h4>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
-                {errorSolution.possibleCauses.map((item) => (
-                  <li className="flex gap-3" key={item}>
-                    <AlertTriangle className="mt-1 h-4 w-4 shrink-0 text-danger" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <h4 className="type-label mt-7 text-ink">확인 순서</h4>
-              <ol className="mt-3">
-                {errorSolution.solutionSteps.map((item, index) => (
-                  <li
-                    className="grid grid-cols-[32px_minmax(0,1fr)] border-t border-line py-3 text-sm leading-6"
-                    key={item}
-                  >
-                    <span className="font-mono text-xs text-signal-ink">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ol>
-              <SecondaryButton
-                className="mt-5"
-                icon={Copy}
-                onClick={() =>
-                  void copyText(
-                    errorSolution.suggestedPrompt.replaceAll(
-                      "{{errorMessage}}",
-                      errorMessage,
-                    ),
-                    "에러 해결 프롬프트를 복사했습니다.",
-                  )
-                }
-              >
-                AI에게 물어볼 문장 복사
-              </SecondaryButton>
+          <section className="rounded-2xl border border-line bg-canvas/55 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="error-helper-caption font-mono font-bold uppercase tracking-[0.16em] text-danger">
+                  AI 문제 분석
+                </p>
+                <h3 className="error-helper-title type-title mt-2 text-ink">
+                  {selectedErrorStep ? `${selectedErrorStep.title}에서 막혔어요` : "어디에서 막혔는지 알려주세요"}
+                </h3>
+              </div>
+              <label className="block shrink-0">
+                <span className="error-helper-caption mb-1 block font-bold text-muted">사용 중인 컴퓨터</span>
+                <select
+                  className="error-helper-copy field min-h-10 py-2 font-bold"
+                  onChange={(event) => setErrorPlatform(event.target.value as ErrorPlatform)}
+                  value={errorPlatform}
+                >
+                  <option value="unknown">잘 모르겠어요</option>
+                  <option value="windows">Windows</option>
+                  <option value="macos">macOS</option>
+                </select>
+              </label>
             </div>
-          ) : null}
+
+            {selectedErrorStep ? (
+              <div className="error-helper-copy mt-4 rounded-xl border border-warning/25 bg-warning/10 px-4 py-3 leading-6 text-ink">
+                <span className="font-bold text-warning">정상이라면</span>
+                <span className="mt-1 block">{selectedErrorStep.check}</span>
+              </div>
+            ) : null}
+
+            <label className="mt-5 block">
+              <span className="error-helper-copy mb-2 block font-bold text-ink">실제로 보이는 화면이나 메시지</span>
+              <span className="error-helper-detail mb-3 block leading-6 text-muted">
+                무엇을 눌렀는지와 화면에 나온 문장을 그대로 적어주세요. API 키, 비밀번호, DB 주소는 지워주세요.
+              </span>
+              <textarea
+                className="error-helper-copy field min-h-44 resize-y font-mono leading-6"
+                onChange={(event) => setErrorMessage(event.target.value)}
+                placeholder={
+                  selectedErrorStep
+                    ? `예: ${selectedErrorStep.title} 단계에서 무엇을 했고, 어떤 문구가 나왔는지 적어주세요.`
+                    : "예: git --version을 입력했는데 'git을 찾을 수 없습니다'라고 나와요."
+                }
+                value={errorMessage}
+              />
+            </label>
+            <PrimaryButton
+              className="mt-4 w-full"
+              disabled={busy === "error"}
+              icon={Wrench}
+              loading={busy === "error"}
+              onClick={solveCurrentError}
+            >
+              AI에게 해결 순서 받기
+            </PrimaryButton>
+
+            {errorSolution ? (
+              <div className="mt-7 border-t border-line pt-6">
+                <p className="error-helper-caption font-mono font-semibold uppercase tracking-[0.14em] text-danger">
+                  초보자용 분석 결과
+                </p>
+                <h3 className="error-helper-title type-title mt-2 text-ink">{errorSolution.summary}</h3>
+                <h4 className="error-helper-copy type-label mt-6 text-ink">가능성이 높은 원인</h4>
+                <ul className="error-helper-copy mt-3 space-y-2 leading-7 text-muted">
+                  {errorSolution.possibleCauses.map((item) => (
+                    <li className="flex gap-3" key={item}>
+                      <AlertTriangle className="mt-1 h-4 w-4 shrink-0 text-danger" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <h4 className="error-helper-copy type-label mt-6 text-ink">한 단계씩 해결해요</h4>
+                <ol className="mt-3">
+                  {errorSolution.solutionSteps.map((item, index) => (
+                    <li
+                      className="error-helper-copy grid grid-cols-[32px_minmax(0,1fr)] border-t border-line py-3 leading-7"
+                      key={item}
+                    >
+                      <span className="error-helper-detail font-mono text-signal-ink">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ol>
+                <SecondaryButton
+                  className="mt-5"
+                  icon={Copy}
+                  onClick={() =>
+                    void copyText(
+                      errorSolution.suggestedPrompt.replaceAll("{{errorMessage}}", errorMessage),
+                      "에러 해결 프롬프트를 복사했습니다.",
+                    )
+                  }
+                >
+                  AI에게 다시 물어볼 문장 복사
+                </SecondaryButton>
+              </div>
+            ) : (
+              <div className="error-helper-detail mt-6 rounded-xl border border-dashed border-line px-4 py-5 text-center leading-6 text-muted">
+                막힌 단계와 화면의 메시지를 보내면, 먼저 확인할 것부터 한 단계씩 알려드려요.
+              </div>
+            )}
+          </section>
         </div>
       );
     }
@@ -2710,8 +3050,39 @@ export function VibeCraftApp() {
           onClose={closeResource}
           open={Boolean(resource)}
           title={activeResourceMeta.title}
+          wide={resource === "error"}
         >
-          <ResourceSwitcher activeResource={resource ?? "coach"} onChange={setResource} />
+          <ResourceSwitcher
+            accessory={
+              resource === "error" ? (
+                <div aria-label="막힘 해결 도우미 글자 크기" className="flex min-h-9 items-center" role="group">
+                  <button
+                    aria-label="글자 작게"
+                    className="min-h-9 rounded-lg px-2 text-xs font-black text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                    disabled={errorTextSize === "normal"}
+                    onClick={() => setErrorTextSize(errorTextSize === "xlarge" ? "large" : "normal")}
+                    type="button"
+                  >
+                    가−
+                  </button>
+                  <span aria-live="polite" className="w-12 text-center font-mono text-[11px] font-bold tabular-nums text-ink">
+                    {errorTextSize === "normal" ? "100%" : errorTextSize === "large" ? "115%" : "130%"}
+                  </span>
+                  <button
+                    aria-label="글자 크게"
+                    className="min-h-9 rounded-lg px-2 text-sm font-black text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                    disabled={errorTextSize === "xlarge"}
+                    onClick={() => setErrorTextSize(errorTextSize === "normal" ? "large" : "xlarge")}
+                    type="button"
+                  >
+                    가+
+                  </button>
+                </div>
+              ) : undefined
+            }
+            activeResource={resource ?? "coach"}
+            onChange={setResource}
+          />
           {notice ? <InlineNotice>{notice}</InlineNotice> : null}
           {renderResource()}
         </ResourceDrawer>

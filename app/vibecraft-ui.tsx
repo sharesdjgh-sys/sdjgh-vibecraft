@@ -307,7 +307,7 @@ export function ResourceDrawer({
         aria-modal="true"
         className={
           "resource-drawer absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-line bg-surface shadow-drawer sm:inset-y-3 sm:max-h-none sm:rounded-[1.75rem_0_0_1.75rem] " +
-          (wide ? "sm:max-w-[820px]" : "sm:max-w-[520px]")
+          (wide ? "sm:max-w-[960px] xl:max-w-[1040px]" : "sm:max-w-[520px]")
         }
         ref={panelRef}
         role="dialog"

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   BookOpen,
   Bot,
@@ -11,6 +12,7 @@ import {
   GraduationCap,
   Hand,
   Lightbulb,
+  LockKeyhole,
   Play,
   Presentation,
   Rocket,
@@ -236,30 +238,37 @@ export function JourneySketch() {
             <h2 className="type-title mt-2 text-ink">첫 번째 서비스 공개</h2>
           </div>
           <span className="rounded-full border border-signal/20 bg-signal-soft px-2.5 py-1 font-mono text-[10px] font-bold text-signal-ink">
-            단계 01
+            4단계
           </span>
         </div>
         <div className="mt-6 rounded-2xl border border-line bg-canvas/70 p-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-surface text-muted shadow-sm">
-              <FileText className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="font-mono text-[10px] font-bold text-muted">시작</p>
-              <p className="text-sm font-bold text-ink">기획 또는 아이디어</p>
-            </div>
-          </div>
-          <div className="my-5 flex items-center gap-3" aria-hidden="true">
-            <span className="h-px flex-1 bg-line" />
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-signal-soft font-mono text-xs font-black text-signal-ink">↓</span>
-            <span className="h-px flex-1 bg-line" />
-          </div>
-          <div className="flex items-center gap-3 rounded-xl bg-ink p-4 text-surface shadow-strong">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal text-white shadow-[0_0_24px_rgba(207,92,57,.42)]">
+          <ol className="space-y-1" aria-label="첫 서비스 공개 순서">
+            {[
+              ["01", "방향 정하기", "기획 또는 아이디어를 선택해요"],
+              ["02", "브리프 만들기", "대상·문제·핵심 기능을 정리해요"],
+              ["03", "제작 방식 고르기", "도구와 서비스 형태를 선택해요"],
+              ["04", "만들고 확인하기", "첫 버전의 핵심 동작을 테스트해요"],
+            ].map(([number, title, description], index) => (
+              <li className="relative flex gap-3 pb-3 last:pb-4" key={number}>
+                {index < 3 ? (
+                  <span className="absolute left-[0.9375rem] top-8 h-[calc(100%-1.25rem)] w-px bg-line" aria-hidden="true" />
+                ) : null}
+                <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full border border-signal/20 bg-surface font-mono text-[10px] font-black text-signal-ink shadow-sm">
+                  {number}
+                </span>
+                <span className="min-w-0 pt-0.5">
+                  <span className="block text-xs font-bold text-ink">{title}</span>
+                  <span className="mt-0.5 block text-[11px] leading-5 text-muted">{description}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="flex items-center gap-3 rounded-xl border border-signal/25 bg-signal-soft/80 p-4 text-ink shadow-[0_12px_30px_rgba(164,62,35,.10)]">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal text-white shadow-[0_8px_20px_rgba(207,92,57,.24)]">
               <Rocket className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono text-[10px] text-surface/60">완료 조건</p>
+              <p className="font-mono text-[10px] font-bold text-signal-ink/70">완료 조건</p>
               <p className="text-sm font-black">실제로 열리는 공유 URL</p>
             </div>
           </div>
@@ -388,6 +397,11 @@ export function MissionCard({
           {item.title}
         </h2>
         <p className="type-body mt-4 max-w-2xl text-muted">{item.description}</p>
+        {status === "blocked" ? (
+          <p className="mt-5 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm font-semibold leading-6 text-warning">
+            이 작업을 해결하기 전에는 다음 작업으로 넘어가지 않아요.
+          </p>
+        ) : null}
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           {status !== "active" ? (
             <button
@@ -396,7 +410,7 @@ export function MissionCard({
               type="button"
             >
               <Play className="h-4 w-4" />
-              작업 시작
+              {status === "blocked" ? "다시 시도" : "작업 시작"}
             </button>
           ) : null}
           <button
@@ -413,7 +427,7 @@ export function MissionCard({
             type="button"
           >
             <Hand className="h-4 w-4" />
-            막힘 · 도움받기
+            {status === "blocked" ? "도움 다시 열기" : "막힘 · 도움받기"}
           </button>
         </div>
       </div>
@@ -424,32 +438,40 @@ export function MissionCard({
 export function TaskRow({
   index,
   item,
+  locked = false,
   onChange,
   showSequence = false,
   status,
 }: {
   index: number;
   item: ChecklistItem;
+  locked?: boolean;
   onChange: (status: ChecklistStatus) => void;
   showSequence?: boolean;
   status: ChecklistStatus;
 }) {
   if (showSequence) {
     return (
-      <article className={`technology-flow-node task-flow-status-${status} flex flex-col`}>
+      <article
+        aria-disabled={locked}
+        className={`technology-flow-node task-flow-status-${status} ${locked ? "task-flow-locked" : ""} flex flex-col`}
+      >
         <div className="flex items-center justify-between gap-3">
           <span className="technology-flow-number">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span className="rounded-full bg-canvas px-2 py-1 font-mono text-[9px] font-bold text-muted">
-            STEP {index + 1}
+          <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-1 font-mono text-[9px] font-bold text-muted">
+            {locked ? <LockKeyhole className="h-3 w-3" /> : null}
+            {locked ? "잠김" : `STEP ${index + 1}`}
           </span>
         </div>
         <h3 className="mt-4 text-base font-bold leading-5 text-ink">{item.title}</h3>
         <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
-        <fieldset className="mt-auto border-t border-line pt-4">
+        <fieldset className="mt-auto border-t border-line pt-4" disabled={locked}>
           <legend className="sr-only">{item.title} 작업 상태</legend>
-          <p className="text-[10px] font-bold text-signal-ink">작업 상태</p>
+          <p className={`text-[10px] font-bold ${locked ? "text-muted" : "text-signal-ink"}`}>
+            {locked ? "이전 작업 완료 후 시작" : "작업 상태"}
+          </p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             {(Object.keys(statusLabels) as ChecklistStatus[]).map((nextStatus) => {
               const StatusIcon = statusIcons[nextStatus];
@@ -458,7 +480,7 @@ export function TaskRow({
                 <button
                   aria-pressed={selected}
                   className={
-                    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[10px] font-bold transition-all duration-300 active:scale-[0.97] " +
+                    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[10px] font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 " +
                     (selected
                       ? statusClasses[nextStatus] + " shadow-sm"
                       : "border-line bg-surface/70 text-muted hover:border-signal/30 hover:bg-signal-soft hover:text-signal-ink")
@@ -480,8 +502,9 @@ export function TaskRow({
 
   return (
     <article
+      aria-disabled={locked}
       className={
-        "mt-3 grid gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-soft sm:grid-cols-[44px_minmax(0,1fr)_156px] sm:items-center " +
+        `mt-3 grid gap-4 rounded-2xl border p-4 transition-shadow sm:grid-cols-[44px_minmax(0,1fr)_156px] sm:items-center ${locked ? "opacity-55" : "hover:shadow-soft"} ` +
         taskRowClasses[status]
       }
     >
@@ -501,6 +524,7 @@ export function TaskRow({
         <span className="sr-only">{item.title} 상태</span>
         <select
           className={"min-h-11 w-full rounded-xl border px-3 text-xs font-bold " + statusClasses[status]}
+          disabled={locked}
           onChange={(event) => onChange(event.target.value as ChecklistStatus)}
           value={status}
         >
@@ -563,35 +587,40 @@ export function ResourceDock({
 
 export function ResourceSwitcher({
   activeResource,
+  accessory,
   onChange,
 }: {
   activeResource: ResourceId;
+  accessory?: ReactNode;
   onChange: (resource: ResourceId) => void;
 }) {
   const order: ResourceId[] = ["coach", "concept", "terms", "prompts", "error"];
   return (
-    <nav aria-label="도움 도구 선택" className="mb-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-line bg-canvas/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/.75)]">
-      {order.map((resourceId) => {
-        const Icon = resourceMetadata[resourceId].icon;
-        const selected = activeResource === resourceId;
-        return (
-          <button
-            aria-current={selected ? "page" : undefined}
-            className={
-              "flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-all duration-300 " +
-              (selected
-                ? "bg-surface text-ink shadow-[0_4px_14px_rgba(104,66,47,.10),inset_0_0_0_1px_rgb(var(--color-line))]"
-                : "text-muted hover:bg-surface/60 hover:text-ink")
-            }
-            key={resourceId}
-            onClick={() => onChange(resourceId)}
-            type="button"
-          >
-            <Icon className={"h-3.5 w-3.5 " + (selected ? "text-signal" : "")} />
-            {resourceMetadata[resourceId].short}
-          </button>
-        );
-      })}
-    </nav>
+    <div className="mb-6 flex items-center rounded-2xl border border-line bg-canvas/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/.75)]">
+      <nav aria-label="도움 도구 선택" className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+        {order.map((resourceId) => {
+          const Icon = resourceMetadata[resourceId].icon;
+          const selected = activeResource === resourceId;
+          return (
+            <button
+              aria-current={selected ? "page" : undefined}
+              className={
+                "flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-all duration-300 " +
+                (selected
+                  ? "bg-surface text-ink shadow-[0_4px_14px_rgba(104,66,47,.10),inset_0_0_0_1px_rgb(var(--color-line))]"
+                  : "text-muted hover:bg-surface/60 hover:text-ink")
+              }
+              key={resourceId}
+              onClick={() => onChange(resourceId)}
+              type="button"
+            >
+              <Icon className={"h-3.5 w-3.5 " + (selected ? "text-signal" : "")} />
+              {resourceMetadata[resourceId].short}
+            </button>
+          );
+        })}
+      </nav>
+      {accessory ? <div className="ml-1.5 shrink-0 border-l border-line pl-1.5">{accessory}</div> : null}
+    </div>
   );
 }

@@ -981,6 +981,13 @@ samp {
   background-color: rgb(var(--color-warning) / 0.06);
 }
 
+.technology-flow-node.task-flow-locked {
+  border-color: rgb(var(--color-line));
+  background-color: rgb(var(--color-canvas) / 0.55);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
 @media (min-width: 640px) {
   .technology-flow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1206,6 +1213,24 @@ samp {
     color: white;
   }
 
+  .technology-flow-node.task-flow-locked:hover {
+    border-color: rgb(var(--color-line));
+    background-color: rgb(var(--color-canvas) / 0.55);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .technology-flow-node.task-flow-locked:hover .technology-flow-number {
+    background: rgb(var(--color-signal-soft));
+    color: rgb(var(--color-signal-ink));
+    transform: none;
+  }
+
+  .technology-flow-node.task-flow-locked:hover::after {
+    background: rgb(var(--color-signal-soft));
+    color: rgb(var(--color-signal-ink));
+  }
+
   .tool-surface-card:hover,
   .tool-surface-card:focus-within {
     border-color: rgb(var(--tool-surface-line));
@@ -1237,6 +1262,44 @@ samp {
   .design-resource-card:focus-within > span:first-child {
     color: rgb(var(--design-resource-accent));
   }
+}
+
+.error-helper-text--normal {
+  --error-helper-caption: 0.75rem;
+  --error-helper-detail: 0.8125rem;
+  --error-helper-copy: 0.875rem;
+  --error-helper-title: 1.125rem;
+}
+
+.error-helper-text--large {
+  --error-helper-caption: 0.8125rem;
+  --error-helper-detail: 0.875rem;
+  --error-helper-copy: 1rem;
+  --error-helper-title: 1.25rem;
+}
+
+.error-helper-text--xlarge {
+  --error-helper-caption: 0.875rem;
+  --error-helper-detail: 1rem;
+  --error-helper-copy: 1.125rem;
+  --error-helper-title: 1.375rem;
+}
+
+.error-helper .error-helper-caption {
+  font-size: var(--error-helper-caption);
+}
+
+.error-helper .error-helper-detail {
+  font-size: var(--error-helper-detail);
+}
+
+.error-helper .error-helper-copy,
+.error-helper .action-button {
+  font-size: var(--error-helper-copy);
+}
+
+.error-helper .error-helper-title {
+  font-size: var(--error-helper-title);
 }
 
 @media (prefers-reduced-motion: reduce) {
