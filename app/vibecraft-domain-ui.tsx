@@ -596,8 +596,8 @@ export function ResourceSwitcher({
 }) {
   const order: ResourceId[] = ["coach", "concept", "terms", "prompts", "error"];
   return (
-    <div className="mb-6 flex items-center rounded-2xl border border-line bg-canvas/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/.75)]">
-      <nav aria-label="도움 도구 선택" className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+    <div className="mb-7 flex items-center rounded-[1.15rem] border border-line bg-canvas/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/.8),0_8px_22px_rgba(104,66,47,.05)] backdrop-blur-xl">
+      <nav aria-label="도움 도구 선택" className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
         {order.map((resourceId) => {
           const Icon = resourceMetadata[resourceId].icon;
           const selected = activeResource === resourceId;
@@ -605,16 +605,16 @@ export function ResourceSwitcher({
             <button
               aria-current={selected ? "page" : undefined}
               className={
-                "flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-all duration-300 " +
+                "group flex min-h-11 min-w-[5.25rem] flex-1 shrink-0 items-center justify-center gap-2 rounded-[0.85rem] px-3 text-xs font-bold transition-all duration-300 active:scale-[.98] " +
                 (selected
-                  ? "bg-surface text-ink shadow-[0_4px_14px_rgba(104,66,47,.10),inset_0_0_0_1px_rgb(var(--color-line))]"
-                  : "text-muted hover:bg-surface/60 hover:text-ink")
+                  ? "bg-ink text-surface shadow-[0_5px_16px_rgba(72,45,32,.16)]"
+                  : "text-muted hover:bg-surface hover:text-ink")
               }
               key={resourceId}
               onClick={() => onChange(resourceId)}
               type="button"
             >
-              <Icon className={"h-3.5 w-3.5 " + (selected ? "text-signal" : "")} />
+              <Icon className={"h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110 " + (selected ? "text-surface" : "text-signal-ink")} />
               {resourceMetadata[resourceId].short}
             </button>
           );

@@ -152,6 +152,33 @@ const beginnerGitSetupSteps: BeginnerSetupStep[] = [
   },
 ];
 
+const coachQuickQuestions = [
+  {
+    label: "다음 작업 정하기",
+    description: "할 일이 많아 우선순위를 정하기 어려울 때",
+    output: "다음 행동 + 완료 기준",
+    prompt: "현재 프로젝트 상태를 기준으로 지금 가장 먼저 끝낼 작업 하나와 완료 기준을 알려주세요.",
+  },
+  {
+    label: "기능을 작게 나누기",
+    description: "기능이 커 보여 어디서 시작할지 막막할 때",
+    output: "작업 순서 + 확인 방법",
+    prompt: "지금 만들 기능이 너무 크게 느껴져요. 확인 가능한 작은 작업 순서로 나눠주세요.",
+  },
+  {
+    label: "화면 점검하기",
+    description: "화면은 만들었지만 무엇을 고칠지 모를 때",
+    output: "문제점 + 수정 우선순위",
+    prompt: "현재 화면에서 초보 사용자가 망설일 부분과 가장 먼저 고칠 항목을 알려주세요.",
+  },
+  {
+    label: "배포 준비 확인",
+    description: "공개하기 전에 빠진 설정이 걱정될 때",
+    output: "배포 전 점검표",
+    prompt: "현재 프로젝트를 배포하기 전에 빠진 준비가 무엇인지 우선순위대로 확인해주세요.",
+  },
+];
+
 const taskHelpTemplates: Record<
   string,
   Array<Omit<BeginnerSetupStep, "id">>
@@ -844,7 +871,9 @@ export function VibeCraftApp() {
   const [interviewQuestions, setInterviewQuestions] = useState<string[]>([]);
   const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
   const [termSearch, setTermSearch] = useState("");
+  const [termCategory, setTermCategory] = useState("전체");
   const [promptSearch, setPromptSearch] = useState("");
+  const [promptCategory, setPromptCategory] = useState("전체");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorPlatform, setErrorPlatform] = useState<ErrorPlatform>("unknown");
   const [errorTextSize, setErrorTextSize] = usePersistentState<ErrorTextSize>(
@@ -961,26 +990,37 @@ export function VibeCraftApp() {
 
   const filteredTerms = useMemo(() => {
     const query = termSearch.trim().toLowerCase();
-    if (!query) return terms;
     return terms.filter((item) =>
-      [item.term, item.category, item.plainDescription, ...item.related].some((value) =>
+      (termCategory === "전체" || item.category === termCategory) &&
+      (!query || [item.term, item.category, item.plainDescription, ...item.related].some((value) =>
         value.toLowerCase().includes(query),
-      ),
+      )),
     );
-  }, [termSearch]);
+  }, [termCategory, termSearch]);
+
+  const termCategories = useMemo(
+    () => ["전체", ...Array.from(new Set(terms.map((item) => item.category)))],
+    [],
+  );
 
   const filteredPrompts = useMemo(() => {
     const query = promptSearch.trim().toLowerCase();
     return promptTemplates.filter((item) => {
       const matchesTool = item.tool === "all" || item.tool === activeTool;
+      const matchesCategory = promptCategory === "전체" || item.category === promptCategory;
       const matchesQuery =
         !query ||
         [item.title, item.category, item.description].some((value) =>
           value.toLowerCase().includes(query),
         );
-      return matchesTool && matchesQuery;
+      return matchesTool && matchesCategory && matchesQuery;
     });
-  }, [activeTool, promptSearch]);
+  }, [activeTool, promptCategory, promptSearch]);
+
+  const promptCategories = useMemo(
+    () => ["전체", ...Array.from(new Set(promptTemplates.map((item) => item.category)))],
+    [],
+  );
 
   const closeResource = useCallback(() => setResource(null), []);
 
@@ -2704,60 +2744,82 @@ export function VibeCraftApp() {
 
     if (resource === "concept") {
       return (
-        <div className="divide-y divide-line border-y border-line">
-          {conceptCards.map((card, index) => (
-            <section className="grid grid-cols-[40px_minmax(0,1fr)] gap-3 py-6" key={card.title}>
-              <span className="font-mono text-xs font-semibold text-signal-ink">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h3 className="type-title text-ink">{card.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted">{card.body}</p>
+        <div className="resource-library">
+          <section className="relative overflow-hidden rounded-[1.5rem] bg-ink p-6 text-surface shadow-[0_18px_45px_rgba(72,45,32,.18)] sm:p-8">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-signal/20 blur-3xl" />
+            <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
+              <div className="max-w-2xl">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-surface/55">VIBE CODING BASICS · 01</p>
+                <h3 className="mt-3 text-2xl font-black tracking-[-0.035em] text-balance sm:text-3xl">{conceptCards[0].title}</h3>
+                <p className="mt-4 text-sm font-medium leading-7 text-surface/75 sm:text-[15px]">{conceptCards[0].body}</p>
+                <div className="mt-6 border-l-2 border-signal pl-4">
+                  <p className="text-xs font-bold text-surface/50">이렇게 생각해보세요</p>
+                  <p className="mt-1.5 text-sm leading-6 text-surface/90">{conceptCards[0].example}</p>
+                </div>
               </div>
-            </section>
-          ))}
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface/10 bg-surface/10 lg:grid-cols-1">
+                <div className="bg-ink/60 p-4"><strong className="block font-mono text-2xl font-black tabular-nums text-white">08</strong><span className="mt-1 block text-xs text-surface/50">필수 개념</span></div>
+                <div className="bg-ink/60 p-4"><strong className="block font-mono text-2xl font-black tabular-nums text-white">15분</strong><span className="mt-1 block text-xs text-surface/50">예상 학습 시간</span></div>
+              </div>
+            </div>
+          </section>
+          <div className="mt-8 flex items-end justify-between gap-4 border-b border-line pb-4">
+            <div><p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-signal-ink">LEARNING PATH</p><h3 className="type-title mt-1.5 text-ink">알고 끝내지 않고, 바로 적용해요</h3></div>
+            <span className="font-mono text-[11px] font-bold text-muted">02—08</span>
+          </div>
+          <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
+            {conceptCards.slice(1).map((card, index) => (
+              <article className={`group rounded-2xl border border-line bg-surface p-5 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-[0_16px_36px_rgba(104,66,47,.10)] sm:p-6 ${index === 2 || index === 5 ? "md:translate-y-6 md:hover:translate-y-5" : ""}`} key={card.title}>
+                <div className="flex items-start justify-between gap-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-signal-soft font-mono text-[11px] font-black text-signal-ink">{String(index + 2).padStart(2, "0")}</span><span className="rounded-full border border-line bg-canvas px-2.5 py-1 text-[10px] font-bold text-muted">핵심 개념</span></div>
+                <h3 className="mt-5 text-lg font-extrabold tracking-[-0.025em] text-ink">{card.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-muted">{card.body}</p>
+                <div className="mt-5 rounded-xl bg-canvas/80 p-4"><p className="text-[11px] font-extrabold text-signal-ink">상황 예시</p><p className="mt-1.5 text-xs leading-6 text-ink/80">{card.example}</p></div>
+                <div className="mt-4 flex gap-2.5 border-t border-line pt-4 text-xs font-bold leading-5 text-ink"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" /><span>{card.action}</span></div>
+              </article>
+            ))}
+          </div>
         </div>
       );
     }
 
     if (resource === "terms") {
       return (
-        <div>
-          <label className="relative block">
-            <span className="sr-only">용어 검색</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              className="field pl-10"
-              onChange={(event) => setTermSearch(event.target.value)}
-              placeholder="터미널, Vercel, 환경변수 검색"
-              value={termSearch}
-            />
-          </label>
-          <div className="mt-7 divide-y divide-line border-y border-line">
-            {filteredTerms.map((term) => (
-              <article className="py-6" key={term.term}>
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
-                  {term.category}
-                </p>
-                <h3 className="type-title mt-2 text-ink">
-                  {term.term}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
-                <p className="mt-4 border-l-2 border-line pl-4 text-sm leading-6 text-ink">
-                  {term.examples[activeRole]}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {term.related.map((item) => (
-                    <span
-                      className="border border-line bg-canvas px-2 py-1 font-mono text-[10px] text-muted"
-                      key={item}
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </article>
-            ))}
+        <div className="resource-library">
+          <section className="overflow-hidden rounded-[1.5rem] border border-line bg-canvas/70">
+            <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
+              <div><p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-signal-ink">PLAIN LANGUAGE GLOSSARY</p><h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink sm:text-2xl">낯선 말 때문에 작업을 멈추지 않도록</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">정의만 외우지 않아도 됩니다. 현재 역할에 맞는 비유와 실제 프로젝트에서 함께 쓰이는 말까지 확인하세요.</p></div>
+              <div className="flex items-end justify-between rounded-xl border border-line bg-surface px-4 py-3 shadow-sm"><span className="text-xs font-bold text-muted">수록 용어</span><strong className="font-mono text-2xl font-black tabular-nums text-signal-ink">{terms.length}</strong></div>
+            </div>
+            <div className="border-t border-line bg-surface p-4 sm:p-5">
+              <label className="relative block"><span className="sr-only">용어 검색</span><Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" /><input className="field min-h-12 pl-11" onChange={(event) => setTermSearch(event.target.value)} placeholder="용어, 설명, 연관어를 검색하세요" value={termSearch} /></label>
+            </div>
+          </section>
+          <div className="mt-7 grid gap-6 lg:grid-cols-[170px_minmax(0,1fr)]">
+            <aside>
+              <p className="mb-3 text-[11px] font-extrabold text-muted">분류</p>
+              <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible" aria-label="용어 분류">
+                {termCategories.map((category) => {
+                  const count = category === "전체" ? terms.length : terms.filter((item) => item.category === category).length;
+                  const active = termCategory === category;
+                  return <button aria-pressed={active} className={`flex shrink-0 items-center justify-between gap-5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold transition-all ${active ? "bg-ink text-surface shadow-sm" : "border border-line bg-surface text-muted hover:border-signal/30 hover:text-ink"}`} key={category} onClick={() => setTermCategory(category)} type="button"><span>{category}</span><span className={`font-mono text-[10px] ${active ? "text-surface/55" : "text-muted"}`}>{count}</span></button>;
+                })}
+              </div>
+            </aside>
+            <div>
+              <div className="mb-3 flex items-center justify-between"><p className="text-xs font-bold text-ink">{termCategory} <span className="ml-1 font-mono text-muted">{filteredTerms.length}</span></p><p className="text-[11px] text-muted">현재 역할에 맞춘 예시</p></div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {filteredTerms.map((term, index) => (
+                  <article className="group flex flex-col rounded-2xl border border-line bg-surface p-5 transition-all duration-300 hover:border-signal/30 hover:shadow-[0_12px_30px_rgba(104,66,47,.08)]" key={term.term}>
+                    <div className="flex items-center justify-between gap-3"><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">{term.category}</p><span className="font-mono text-[10px] text-muted">{String(index + 1).padStart(2, "0")}</span></div>
+                    <h3 className="type-title mt-2 text-ink">{term.term}</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">{term.plainDescription}</p>
+                    <div className="mt-4 rounded-xl bg-canvas/70 p-3.5"><p className="text-[10px] font-extrabold text-signal-ink">쉽게 말하면</p><p className="mt-1 text-xs leading-6 text-ink">{term.examples[activeRole]}</p></div>
+                    <div className="mt-auto flex flex-wrap gap-2 pt-5">{term.related.map((item) => <span className="rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[10px] text-muted" key={item}>{item}</span>)}</div>
+                  </article>
+                ))}
+              </div>
+              {!filteredTerms.length ? <p className="rounded-2xl border border-dashed border-line py-14 text-center text-sm text-muted">검색 결과가 없습니다. 더 짧은 단어로 찾아보세요.</p> : null}
+            </div>
           </div>
         </div>
       );
@@ -2765,43 +2827,43 @@ export function VibeCraftApp() {
 
     if (resource === "prompts") {
       return (
-        <div>
-          <label className="relative block">
-            <span className="sr-only">프롬프트 검색</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              className="field pl-10"
-              onChange={(event) => setPromptSearch(event.target.value)}
-              placeholder="배포, 에러, 모바일 검색"
-              value={promptSearch}
-            />
-          </label>
-          <p className="mt-3 text-xs leading-5 text-muted">
-            현재 선택한 {selectedToolInfo.name}에 맞는 템플릿을 보여줍니다.
-          </p>
-          <div className="mt-7 space-y-9">
-            {filteredPrompts.map((prompt) => (
-              <article className="border-t border-line pt-6" key={prompt.id}>
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">
-                  {prompt.category}
-                </p>
-                <h3 className="type-title mt-2 text-ink">
-                  {prompt.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
-                <pre className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-ink bg-ink p-4 text-xs leading-6 text-surface">
-                  {prompt.template}
-                </pre>
-                <SecondaryButton
-                  className="mt-3"
-                  icon={Copy}
-                  onClick={() => copyPrompt(prompt.template)}
-                >
-                  프로젝트 내용으로 복사
-                </SecondaryButton>
+        <div className="resource-library">
+          <section className="relative overflow-hidden rounded-[1.5rem] border border-signal/15 bg-signal-soft/55 p-5 sm:p-7">
+            <div className="pointer-events-none absolute right-8 top-0 h-32 w-32 rounded-full bg-signal/10 blur-3xl" />
+            <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
+              <div><p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-signal-ink">PROMPT WORKBENCH</p><h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-ink sm:text-2xl">복사하고, 내 상황 한 줄만 더하세요</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">결과물과 확인 방법까지 요청하도록 다듬은 실전 템플릿입니다. 현재 프로젝트 정보가 있는 부분은 자동으로 채워집니다.</p></div>
+              <div className="rounded-xl border border-signal/15 bg-surface/80 px-4 py-3 backdrop-blur"><p className="text-[10px] font-bold text-muted">현재 도구</p><div className="mt-1 flex items-center justify-between"><strong className="text-sm font-extrabold text-ink">{selectedToolInfo.name}</strong><span className="rounded-full bg-signal-soft px-2.5 py-1 text-[10px] font-bold text-signal-ink">맞춤 선별 중</span></div></div>
+            </div>
+          </section>
+          <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <label className="relative block"><span className="sr-only">프롬프트 검색</span><Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" /><input className="field min-h-12 pl-11" onChange={(event) => setPromptSearch(event.target.value)} placeholder="작업 이름이나 결과물로 검색하세요" value={promptSearch} /></label>
+            <span className="whitespace-nowrap font-mono text-[11px] font-bold text-muted">{filteredPrompts.length} TEMPLATES</span>
+          </div>
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-2" aria-label="프롬프트 분류">
+            {promptCategories.map((category) => {
+              const active = promptCategory === category;
+              return <button aria-pressed={active} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-bold transition-all ${active ? "border-ink bg-ink text-surface" : "border-line bg-surface text-muted hover:border-signal/35 hover:text-ink"}`} key={category} onClick={() => setPromptCategory(category)} type="button">{category}</button>;
+            })}
+          </div>
+          <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
+            {filteredPrompts.map((prompt, index) => (
+              <article className={`group overflow-hidden rounded-2xl border bg-surface transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(104,66,47,.10)] ${index === 0 ? "border-signal/35 lg:col-span-2" : "border-line hover:border-signal/30"}`} key={prompt.id}>
+                <div className={`p-5 sm:p-6 ${index === 0 ? "lg:grid lg:grid-cols-[minmax(0,.7fr)_minmax(0,1.3fr)] lg:gap-7" : ""}`}>
+                  <div>
+                    <div className="flex items-center justify-between gap-3"><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-ink">{prompt.category}</p>{index === 0 ? <span className="rounded-full bg-signal-soft px-2.5 py-1 text-[10px] font-extrabold text-signal-ink">먼저 써보세요</span> : null}</div>
+                    <h3 className="mt-2 text-lg font-extrabold tracking-[-0.025em] text-ink">{prompt.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted">{prompt.description}</p>
+                    <SecondaryButton className="mt-5 hidden lg:inline-flex" icon={Copy} onClick={() => copyPrompt(prompt.template)}>프로젝트 내용으로 복사</SecondaryButton>
+                  </div>
+                  <div>
+                    <div className={`relative mt-5 overflow-hidden rounded-xl border border-ink bg-ink ${index === 0 ? "lg:mt-0" : ""}`}><div className="flex items-center gap-1.5 border-b border-surface/10 px-4 py-2.5"><span className="h-1.5 w-1.5 rounded-full bg-signal" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="ml-2 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/35">READY TO USE</span></div><pre className="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-xs leading-6 text-surface/85">{prompt.template}</pre></div>
+                    <SecondaryButton className="mt-3 w-full justify-center lg:hidden" icon={Copy} onClick={() => copyPrompt(prompt.template)}>프로젝트 내용으로 복사</SecondaryButton>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
+          {!filteredPrompts.length ? <p className="rounded-2xl border border-dashed border-line py-14 text-center text-sm text-muted">조건에 맞는 템플릿이 없습니다. 전체 분류에서 다시 찾아보세요.</p> : null}
         </div>
       );
     }
@@ -2975,20 +3037,38 @@ export function VibeCraftApp() {
     }
 
     return (
-      <div className="flex min-h-full flex-col">
-        <div className="rounded-2xl border border-signal/15 bg-signal-soft/70 px-4 py-3.5 shadow-[inset_0_1px_0_rgb(255_255_255/.7)]">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_0_4px_rgb(var(--color-success)/.1)]" />
-            <p className="text-xs font-extrabold text-ink">프로젝트 문맥 연결됨</p>
+      <div className="resource-library min-h-full">
+        <section className="relative overflow-hidden rounded-[1.5rem] bg-ink p-6 text-surface shadow-[0_18px_45px_rgba(72,45,32,.16)] sm:p-7">
+          <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-signal/20 blur-3xl" />
+          <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-success shadow-[0_0_0_4px_rgb(var(--color-success)/.12)]" /><p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-surface/55">PROJECT CONTEXT CONNECTED</p></div><h3 className="mt-3 text-2xl font-black tracking-[-0.035em] text-white">프로젝트를 다시 설명하지 않아도 돼요</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-surface/65">현재 단계와 선택한 도구를 바탕으로, 지금 필요한 다음 행동과 확인 기준을 함께 정리합니다.</p></div>
+            <div className="flex flex-wrap gap-2 lg:max-w-72 lg:justify-end"><span className="rounded-full border border-surface/10 bg-surface/5 px-3 py-1.5 text-[11px] font-bold text-surface/70">{phaseMetadata[safePhase].label}</span><span className="rounded-full border border-surface/10 bg-surface/5 px-3 py-1.5 text-[11px] font-bold text-surface/70">{selectedToolInfo.name}</span><span className="rounded-full border border-surface/10 bg-surface/5 px-3 py-1.5 text-[11px] font-bold text-surface/70">{selectedServiceInfo.title}</span></div>
           </div>
-          <p className="mt-1.5 pl-4 text-xs leading-5 text-muted">
-            {phaseMetadata[safePhase].label} · {selectedToolInfo.name} ·{" "}
-            {selectedServiceInfo.title}
-          </p>
-        </div>
+        </section>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,.78fr)_minmax(0,1.22fr)] lg:items-start">
+          <section aria-labelledby="coach-quick-start-title">
+            <div><p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-signal-ink">START WITH A SITUATION</p><h3 className="type-title mt-1.5 text-ink" id="coach-quick-start-title">지금 상황과 가까운 질문</h3><p className="mt-1.5 text-xs leading-5 text-muted">선택하면 질문 초안이 입력창에 들어갑니다. 내 상황을 한 줄 덧붙여 보내세요.</p></div>
+          <div className="mt-4 space-y-2.5">
+            {coachQuickQuestions.map((item, index) => (
+              <button
+                className="group grid w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-signal/35 hover:shadow-[0_10px_26px_rgba(104,66,47,.08)] active:scale-[.99]"
+                key={item.label}
+                onClick={() => setChatInput(item.prompt)}
+                type="button"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-canvas font-mono text-[10px] font-black text-signal-ink">{String(index + 1).padStart(2, "0")}</span>
+                <span><strong className="block text-sm font-extrabold text-ink">{item.label}</strong><span className="mt-0.5 block text-[11px] leading-5 text-muted">{item.description}</span><span className="mt-2 inline-flex rounded-full bg-signal-soft px-2 py-1 text-[9px] font-bold text-signal-ink">{item.output}</span></span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-signal transition-transform group-hover:translate-x-0.5" />
+              </button>
+            ))}
+          </div>
+            <div className="mt-4 rounded-2xl border border-dashed border-line bg-canvas/50 p-4"><p className="text-xs font-extrabold text-ink">좋은 답을 받는 세 가지 단서</p><div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px] font-bold text-muted"><span className="rounded-lg bg-surface px-2 py-2">하려던 일</span><span className="rounded-lg bg-surface px-2 py-2">실제 결과</span><span className="rounded-lg bg-surface px-2 py-2">원하는 상태</span></div></div>
+        </section>
+        <section className="flex min-h-[580px] flex-col overflow-hidden rounded-[1.5rem] border border-line bg-canvas/35 shadow-[0_12px_32px_rgba(104,66,47,.07)]">
+          <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3.5 sm:px-5"><div className="flex items-center gap-2.5"><span className="grid h-8 w-8 place-items-center rounded-full bg-signal text-[10px] font-black text-white">VC</span><div><p className="text-xs font-extrabold text-ink">VibeCraft 코치</p><p className="text-[10px] text-success">지금 답변할 수 있어요</p></div></div><span className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-muted">1:1 PROJECT SESSION</span></div>
         <div
           aria-live="polite"
-          className="mt-6 min-h-0 flex-1 space-y-4 overflow-y-auto"
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
         >
           {chatMessages.map((message, index) => (
             <div className={"flex items-end gap-2.5 " + (message.role === "user" ? "justify-end" : "justify-start")} key={message.role + "-" + index}>
@@ -3027,11 +3107,11 @@ export function VibeCraftApp() {
             </div>
           ))}
         </div>
-        <div className="sticky bottom-0 mt-6 border-t border-line bg-surface/95 pt-4 backdrop-blur-xl safe-area-bottom">
-          <label className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+        <div className="border-t border-line bg-surface/95 p-3 backdrop-blur-xl safe-area-bottom sm:p-4">
+          <label className="grid grid-cols-[minmax(0,1fr)_48px] gap-2">
             <span className="sr-only">프로젝트 코치에게 질문</span>
             <input
-              className="field"
+              className="field min-h-12"
               onChange={(event) => setChatInput(event.target.value)}
               onKeyDown={(event) => {
                 if (
@@ -3048,7 +3128,7 @@ export function VibeCraftApp() {
             />
             <button
               aria-label="질문 보내기"
-              className="icon-button border-ink bg-ink text-surface"
+              className="icon-button h-12 w-12 border-ink bg-ink text-surface"
               disabled={busy === "chat"}
               onClick={() => void sendChatMessage()}
               type="button"
@@ -3056,6 +3136,8 @@ export function VibeCraftApp() {
               <Send className="h-4 w-4" />
             </button>
           </label>
+        </div>
+        </section>
         </div>
       </div>
     );
@@ -3104,10 +3186,11 @@ export function VibeCraftApp() {
       {activeResourceMeta ? (
         <ResourceDrawer
           eyebrow={activeResourceMeta.eyebrow}
+          icon={activeResourceMeta.icon}
           onClose={closeResource}
           open={Boolean(resource)}
           title={activeResourceMeta.title}
-          wide={resource === "error"}
+          wide
         >
           <ResourceSwitcher
             accessory={

@@ -234,6 +234,7 @@ export function SectionHeading({
 export function ResourceDrawer({
   children,
   eyebrow,
+  icon: HeaderIcon = Sparkles,
   onClose,
   open,
   title,
@@ -241,6 +242,7 @@ export function ResourceDrawer({
 }: {
   children: ReactNode;
   eyebrow: string;
+  icon?: LucideIcon;
   onClose: () => void;
   open: boolean;
   title: string;
@@ -315,7 +317,7 @@ export function ResourceDrawer({
         <div className="resource-drawer-header relative flex items-start justify-between gap-4 border-b border-line px-5 pb-5 pt-4 sm:px-7 sm:py-7">
           <div className="relative flex min-w-0 items-start gap-3.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] border border-signal/15 bg-signal-soft text-signal-ink shadow-[inset_0_1px_0_rgb(255_255_255/.8)]">
-              <Sparkles className="h-[18px] w-[18px]" />
+              <HeaderIcon className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-signal-ink">{eyebrow}</p>
