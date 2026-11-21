@@ -1041,20 +1041,31 @@ export function VibeCraftApp() {
 
   useEffect(() => {
     if (window.parent === window) return;
+    let retry: number | undefined;
     function receiveToken(event: MessageEvent) {
       // 토큰은 검증된 스마트 캠퍼스 부모 창에서만 받고 브라우저 저장소에는 남기지 않는다.
       if (event.origin !== SMART_CAMPUS_ORIGIN || event.source !== window.parent ||
           event.data?.type !== "sso:token" || typeof event.data.token !== "string" ||
           !/^[A-Za-z0-9._~-]+$/.test(event.data.token)) return;
       if (campusTokenRef.current === event.data.token) return;
+      window.clearInterval(retry);
       campusTokenRef.current = event.data.token;
       setCampusToken(event.data.token);
       setCampusPlans([]);
       setCampusPlansOpen(false);
     }
     window.addEventListener("message", receiveToken);
-    window.parent.postMessage({ type: "sso:ready" }, SMART_CAMPUS_ORIGIN);
-    return () => { window.removeEventListener("message", receiveToken); campusTokenRef.current = null; };
+    const requestToken = () => {
+      if (!campusTokenRef.current) window.parent.postMessage({ type: "sso:ready" }, SMART_CAMPUS_ORIGIN);
+    };
+    requestToken();
+    // iframe hydration and parent listener setup can finish in either order.
+    let attempts = 0;
+    retry = window.setInterval(() => {
+      if (++attempts >= 20) window.clearInterval(retry);
+      requestToken();
+    }, 1000);
+    return () => { window.clearInterval(retry); window.removeEventListener("message", receiveToken); campusTokenRef.current = null; };
   }, []);
 
   function campusPlanError(error: unknown) {
