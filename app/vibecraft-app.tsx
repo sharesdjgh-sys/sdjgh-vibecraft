@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
@@ -59,6 +59,7 @@ import type {
   ToolSlug,
 } from "@/lib/types";
 import { toolGuides, type ToolGuideTabId } from "@/lib/tool-guides";
+import { campusPlanToText, listCampusPlans, readCampusPlan, SMART_CAMPUS_ORIGIN, type CampusPlanSummary } from "@/lib/campus-plancraft";
 import {
   BriefList,
   JourneySketch,
@@ -867,6 +868,12 @@ export function VibeCraftApp() {
   const [resource, setResource] = useState<ResourceId | null>(null);
   const [planText, setPlanText] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const campusTokenRef = useRef<string | null>(null);
+  const [campusToken, setCampusToken] = useState<string | null>(null);
+  const [campusPlans, setCampusPlans] = useState<CampusPlanSummary[]>([]);
+  const [campusPlansOpen, setCampusPlansOpen] = useState(false);
+  const [campusPlansLoading, setCampusPlansLoading] = useState(false);
+  const [campusPlanLoadingId, setCampusPlanLoadingId] = useState<string | null>(null);
   const [idea, setIdea] = useState("");
   const [interviewQuestions, setInterviewQuestions] = useState<string[]>([]);
   const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
@@ -1031,6 +1038,69 @@ export function VibeCraftApp() {
   useEffect(() => {
     if (recommendation) setSelectedTool(recommendation.recommendedTool);
   }, [recommendation, setSelectedTool]);
+
+  useEffect(() => {
+    if (window.parent === window) return;
+    function receiveToken(event: MessageEvent) {
+      // 토큰은 검증된 스마트 캠퍼스 부모 창에서만 받고 브라우저 저장소에는 남기지 않는다.
+      if (event.origin !== SMART_CAMPUS_ORIGIN || event.source !== window.parent ||
+          event.data?.type !== "sso:token" || typeof event.data.token !== "string" ||
+          !/^[A-Za-z0-9._~-]+$/.test(event.data.token)) return;
+      if (campusTokenRef.current === event.data.token) return;
+      campusTokenRef.current = event.data.token;
+      setCampusToken(event.data.token);
+      setCampusPlans([]);
+      setCampusPlansOpen(false);
+    }
+    window.addEventListener("message", receiveToken);
+    window.parent.postMessage({ type: "sso:ready" }, SMART_CAMPUS_ORIGIN);
+    return () => { window.removeEventListener("message", receiveToken); campusTokenRef.current = null; };
+  }, []);
+
+  function campusPlanError(error: unknown) {
+    const message = error instanceof Error ? error.message : "기획서를 불러오지 못했어요.";
+    setNotice(message);
+    if (message.startsWith("스마트 캠퍼스 로그인 세션이 끝났어요")) {
+      campusTokenRef.current = null;
+      setCampusToken(null);
+      setCampusPlans([]);
+      setCampusPlansOpen(false);
+      window.parent.postMessage({ type: "sso:expired" }, SMART_CAMPUS_ORIGIN);
+    }
+  }
+
+  async function openCampusPlans() {
+    const token = campusTokenRef.current;
+    if (!token) return;
+    if (campusPlansOpen) { setCampusPlansOpen(false); return; }
+    setCampusPlansOpen(true);
+    setCampusPlansLoading(true);
+    setNotice(null);
+    try {
+      const plans = await listCampusPlans(token);
+      if (campusTokenRef.current === token) setCampusPlans(plans);
+    } catch (error) { if (campusTokenRef.current === token) campusPlanError(error); }
+    finally { setCampusPlansLoading(false); }
+  }
+
+  async function importCampusPlan(summary: CampusPlanSummary) {
+    const token = campusTokenRef.current;
+    if (!token) return;
+    if (planText.trim() && !window.confirm("현재 입력한 기획서 내용을 선택한 서버 기획서로 바꿀까요?")) return;
+    setCampusPlanLoadingId(summary.id);
+    setNotice(null);
+    try {
+      const project = await readCampusPlan(token, summary.id);
+      if (campusTokenRef.current !== token) return;
+      const content = campusPlanToText(project);
+      if (content.length > MAX_PLAN_CHARACTERS) throw new Error("기획서가 200,000자를 넘습니다. 첫 버전에 필요한 범위만 남겨주세요.");
+      setPlanText(content);
+      setUploadedFileName(`플랜 크래프트 · ${project.title}`);
+      setCampusPlansOpen(false);
+      setNotice("서버 기획서를 불러왔어요. 내용을 확인한 뒤 프로젝트 브리프를 만들어주세요.");
+    } catch (error) { if (campusTokenRef.current === token) campusPlanError(error); }
+    finally { setCampusPlanLoadingId(null); }
+  }
 
   function scrollToTop() {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1535,6 +1605,41 @@ export function VibeCraftApp() {
                     />
                   </span>
                 </label>
+                {campusToken ? (
+                  <div className="mt-4 rounded-2xl border border-line bg-canvas px-4 py-4">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 text-left text-sm font-bold text-signal-ink"
+                      aria-expanded={campusPlansOpen}
+                      aria-controls="campus-plancraft-projects"
+                      onClick={() => void openCampusPlans()}
+                    >
+                      <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> 플랜 크래프트 서버에서 불러오기</span>
+                      <ChevronRight className={`h-4 w-4 transition-transform ${campusPlansOpen ? "rotate-90" : ""}`} />
+                    </button>
+                    <p className="mt-2 text-xs leading-5 text-muted">같은 스마트 캠퍼스 계정의 기획서를 읽어옵니다. 바이브 크래프트 진행 상태는 이 브라우저에 저장돼요.</p>
+                    {campusPlansOpen ? (
+                      <div id="campus-plancraft-projects" className="mt-4 border-t border-line pt-3">
+                        {campusPlansLoading ? <p className="text-sm text-muted">내 기획서 목록을 불러오는 중이에요.</p> :
+                          campusPlans.length === 0 ? <p className="text-sm text-muted">이 스마트 캠퍼스 계정에 저장된 기획서가 없어요.</p> :
+                          <div className="max-h-64 space-y-2 overflow-y-auto">
+                            {campusPlans.map((project) => (
+                              <button
+                                key={project.id}
+                                type="button"
+                                disabled={campusPlanLoadingId !== null}
+                                className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-white px-3 py-3 text-left text-sm text-ink hover:border-signal disabled:opacity-50"
+                                onClick={() => void importCampusPlan(project)}
+                              >
+                                <span className="min-w-0 truncate">{project.title}</span>
+                                <span className="shrink-0 text-xs text-signal-ink">{campusPlanLoadingId === project.id ? "불러오는 중" : "선택"}</span>
+                              </button>
+                            ))}
+                          </div>}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <label className="block">
                   <span className="sr-only">기획서 핵심 내용</span>
                   <textarea
