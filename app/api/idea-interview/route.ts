@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
+import { complexityInstruction, fitRecommendationToComplexity } from "@/lib/project-complexity";
 import {
   interviewQuestionsResponseSchema,
   interviewQuestionsOutputJsonSchema,
@@ -14,6 +15,7 @@ const schema = z.object({
   role: z.enum(["student", "teacher", "adult"]),
   idea: z.string().min(4).max(3000),
   answers: z.record(z.string()).optional(),
+  complexity: z.enum(["practice", "small", "extended", "advanced"]).default("practice"),
 });
 
 export async function POST(request: Request) {
@@ -36,6 +38,8 @@ export async function POST(request: Request) {
 이미 아이디어에 답이 있는 내용은 다시 묻지 마세요. 기술 용어 대신 실제 사용 상황을 질문하세요.
 
 사용자 역할: ${parsed.data.role}
+선택한 제작 복잡도: ${parsed.data.complexity}
+복잡도 규칙: ${complexityInstruction(parsed.data.complexity)}
 서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 말고, 게임 아이디어는 game으로 분류하세요." : "교사와 일반인에게는 game을 추천하지 말고, 자동화 아이디어는 software로 분류하세요."}
 아이디어: ${parsed.data.idea}
 
@@ -58,8 +62,11 @@ export async function POST(request: Request) {
       system: projectCoachSystemPrompt,
       prompt: `아이디어와 인터뷰 답변을 근거로 프로젝트 브리프와 추천을 작성하세요.
 답변에 없는 요구사항은 임의로 핵심 기능에 넣지 말고, MVP 범위를 작게 유지하세요.
+추천 기술·기능·작업 순서·체크리스트를 선택한 복잡도에 맞추고, 더 큰 기능은 후속 작업으로 분리하세요.
 
 사용자 역할: ${parsed.data.role}
+선택한 제작 복잡도: ${parsed.data.complexity}
+복잡도 규칙: ${complexityInstruction(parsed.data.complexity)}
 서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 마세요. 게임 아이디어라면 game을 추천하세요." : "교사와 일반인에게는 game을 추천하지 마세요. 파일 처리나 반복 업무라면 software를 추천하세요."}
 아이디어: ${parsed.data.idea}
 
@@ -80,6 +87,14 @@ ${answers}
       outputSchema: interviewResultOutputJsonSchema,
     });
     const parsedResult = interviewResultResponseSchema.parse(result.data);
+    parsedResult.recommendation = fitRecommendationToComplexity(parsedResult.recommendation, parsed.data.complexity);
+    if (parsed.data.complexity === "practice" || parsed.data.complexity === "small") {
+      parsedResult.projectBrief.features = parsedResult.recommendation.mainFeatures;
+      parsedResult.projectBrief.screens = parsedResult.projectBrief.screens.slice(
+        0,
+        parsed.data.complexity === "practice" ? 1 : 2,
+      );
+    }
     return NextResponse.json(
       { nextQuestions: [], ...parsedResult },
       { headers: { "x-ai-provider": result.provider } },

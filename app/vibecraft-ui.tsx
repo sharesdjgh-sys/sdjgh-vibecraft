@@ -90,10 +90,11 @@ export function PhaseRail({
               <button
                 aria-current={active ? "step" : undefined}
                 className={`flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all duration-300 ${
-                  active ? "bg-surface text-ink shadow-[0_6px_20px_rgba(104,66,47,.12)]" : done ? "text-success" : "text-muted opacity-60 hover:opacity-100"
+                  active ? "bg-surface text-ink shadow-[0_6px_20px_rgba(104,66,47,.12)]" : done ? "text-success" : "text-muted hover:bg-surface hover:text-ink"
                 }`}
                 key={phaseId}
                 onClick={() => onSelect(phaseId)}
+                title={`${phase.label} 단계 ${active ? "보기" : "둘러보기"}`}
                 type="button"
               >
                 <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
@@ -143,10 +144,11 @@ export function MobilePhaseNav({
             <button
               aria-current={active ? "step" : undefined}
               className={`min-h-9 min-w-0 rounded-full px-1 text-center text-[11px] font-bold transition-colors ${
-                active ? "bg-surface text-ink shadow-soft" : done ? "text-success" : "text-muted opacity-60"
+                active ? "bg-surface text-ink shadow-soft" : done ? "text-success" : "text-muted hover:bg-surface hover:text-ink"
               }`}
               key={phaseId}
               onClick={() => onSelect(phaseId)}
+              title={`${phase.label} 단계 ${active ? "보기" : "둘러보기"}`}
               type="button"
             >
               <span className="block truncate">{done && !active ? "✓ " : ""}{phase.label}</span>

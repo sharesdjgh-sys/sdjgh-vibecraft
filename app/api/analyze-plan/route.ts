@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
+import { complexityInstruction, fitRecommendationToComplexity } from "@/lib/project-complexity";
 import {
   projectCoachSystemPrompt,
   recommendationJsonShape,
@@ -11,6 +12,7 @@ import {
 const schema = z.object({
   role: z.enum(["student", "teacher", "adult"]),
   extractedText: z.string().min(10).max(200000),
+  complexity: z.enum(["practice", "small", "extended", "advanced"]).default("practice"),
 });
 
 export async function POST(request: Request) {
@@ -31,6 +33,9 @@ export async function POST(request: Request) {
       prompt: `다음 기획서를 분석해 프로젝트 브리프를 작성하세요.
 
 사용자 역할: ${parsed.data.role}
+선택한 제작 복잡도: ${parsed.data.complexity}
+복잡도 규칙: ${complexityInstruction(parsed.data.complexity)}
+추천 기술·기능·작업 순서·체크리스트도 이 복잡도에 맞추세요. 기획서에 더 큰 기능이 있어도 첫 버전에서는 후속 작업으로 분리하세요.
 서비스 형태 규칙: ${parsed.data.role === "student" ? "학생에게는 software를 추천하지 마세요. 게임 아이디어라면 game을 추천하세요." : "교사와 일반인에게는 game을 추천하지 마세요. 파일 처리나 반복 업무라면 software를 추천하세요."}
 
 반드시 다음 JSON 구조와 키를 그대로 사용하세요:
@@ -43,7 +48,10 @@ ${parsed.data.extractedText}
       maxTokens: 8000,
       outputSchema: recommendationOutputJsonSchema,
     });
-    const recommendation = recommendationResponseSchema.parse(result.data);
+    const recommendation = fitRecommendationToComplexity(
+      recommendationResponseSchema.parse(result.data),
+      parsed.data.complexity,
+    );
     return NextResponse.json(recommendation, { headers: { "x-ai-provider": result.provider } });
   } catch (error) {
     const failure = aiErrorPayload(error);

@@ -461,7 +461,7 @@ export const promptTemplates: PromptTemplate[] = [
     title: "기획서를 MVP 구현 계획으로 바꾸기",
     description: "PlanCraft 기획서를 기능 우선순위와 구현 순서로 정리합니다.",
     template:
-      "아래 기획서를 바탕으로 Next.js, TypeScript, Tailwind CSS를 사용하는 웹앱 MVP 구현 계획을 작성해주세요. 초보자가 따라 할 수 있게 기능 우선순위, 화면 목록, 데이터 저장 여부, 구현 순서로 나눠주세요.\n\n[기획서]\n{{projectSummary}}",
+      "아래 기획서를 바탕으로 선택한 제작 복잡도에 맞는 웹앱 MVP 계획을 작성해주세요. 필요한 화면과 기술만 제안하고, 기능 우선순위·저장 여부·첫 구현 순서·완료 기준을 알려주세요. 첫 기능 하나를 만든 뒤 확인받고 다음 기능으로 넘어가세요.\n\n[기획서]\n{{projectSummary}}",
   },
   {
     id: "mobile-ui",

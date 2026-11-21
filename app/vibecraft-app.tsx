@@ -60,11 +60,11 @@ import type {
 } from "@/lib/types";
 import { toolGuides, type ToolGuideTabId } from "@/lib/tool-guides";
 import { campusPlanToText, listCampusPlans, readCampusPlan, SMART_CAMPUS_ORIGIN, type CampusPlanSummary } from "@/lib/campus-plancraft";
+import { complexityInstruction, complexityOptions, type ComplexityLevel } from "@/lib/project-complexity";
 import {
   BriefList,
   JourneySketch,
   MissionCard,
-  ProjectEmptyState,
   ResourceDock,
   ResourceSwitcher,
   RoleSelector,
@@ -841,8 +841,13 @@ export function VibeCraftApp() {
   const [sessionId] = usePersistentState("vc-session-id", "local-session");
   const [phase, setPhase] = usePersistentState<PhaseId>("vc-phase", "start");
   const [role, setRole] = usePersistentState<Role | null>("vc-role", null);
+  const [complexity, setComplexity] = usePersistentState<ComplexityLevel>("vc-complexity", "practice");
   const [recommendation, setRecommendation] = usePersistentState<Recommendation | null>(
     "vc-recommendation",
+    null,
+  );
+  const [recommendationComplexity, setRecommendationComplexity] = usePersistentState<ComplexityLevel | null>(
+    "vc-recommendation-complexity",
     null,
   );
   const [selectedTool, setSelectedTool] = usePersistentState<ToolSlug | null>("vc-tool", null);
@@ -911,6 +916,9 @@ export function VibeCraftApp() {
 
   const safePhase = (phaseOrder as readonly string[]).includes(phase) ? phase : "start";
   const activeRole = role ?? "student";
+  const activeComplexity = complexityOptions.some((option) => option.id === complexity)
+    ? complexity
+    : "practice";
   const activeTool = selectedTool ?? recommendation?.recommendedTool ?? "codex";
   const availableServiceTypes = serviceTypes.filter((service) =>
     activeRole === "student" ? service.id !== "software" : service.id !== "game",
@@ -932,17 +940,25 @@ export function VibeCraftApp() {
     serviceTypes.find((item) => item.id === roleRecommendedServiceType) ??
     serviceTypes[0];
   const displayedStack =
-    selectedServiceType && selectedServiceType !== roleRecommendedServiceType
+    recommendationComplexity === "practice"
+      ? ["HTML", "CSS", "JavaScript"]
+      : selectedServiceType && selectedServiceType !== roleRecommendedServiceType
       ? selectedServiceInfo.stack
       : recommendation?.recommendedStack ?? selectedServiceInfo.stack;
+  const displayedScreens = recommendationComplexity === "practice"
+    ? [selectedServiceInfo.screens[activeServiceType === "game" || activeServiceType === "software" ? 1 : 0]]
+    : recommendationComplexity === "small"
+      ? selectedServiceInfo.screens.slice(0, 2)
+      : selectedServiceInfo.screens;
   const activeStackItem =
     selectedStackItem && displayedStack.includes(selectedStackItem) ? selectedStackItem : null;
   const activeStackGuide = activeStackItem ? getStackGuide(activeStackItem) : null;
   const checklistItems = useMemo(() => {
+    if (recommendationComplexity && recommendation?.checklist.length) return recommendation.checklist;
     if (activeServiceType === "software") return softwareChecklist;
     if (activeServiceType === "game") return gameChecklist;
     return baseChecklist;
-  }, [activeServiceType]);
+  }, [activeServiceType, recommendation, recommendationComplexity]);
   const deploymentItems = useMemo(() => {
     const stack = new Set(displayedStack);
     return deploymentChecks.filter((item) => {
@@ -958,7 +974,9 @@ export function VibeCraftApp() {
     });
   }, [activeServiceType, displayedStack]);
   const displayedRoadmap =
-    selectedServiceType && selectedServiceType !== roleRecommendedServiceType
+    recommendationComplexity === "practice" && recommendation
+      ? recommendation.roadmap
+      : selectedServiceType && selectedServiceType !== roleRecommendedServiceType
       ? serviceRoadmaps[selectedServiceType]
       : recommendation?.roadmap ?? serviceRoadmaps[activeServiceType];
   const verifiedDeploymentUrl = useMemo(() => validWebUrl(deploymentUrl), [deploymentUrl]);
@@ -1121,6 +1139,7 @@ export function VibeCraftApp() {
 
   function applyNewRecommendation(nextRecommendation: Recommendation) {
     setRecommendation(nextRecommendation);
+    setRecommendationComplexity(activeComplexity);
     // Recommendations remain suggestions until the user explicitly confirms both choices.
     setSelectedTool(null);
     setSelectedServiceType(null);
@@ -1210,20 +1229,6 @@ export function VibeCraftApp() {
 
   function navigatePhase(nextPhase: PhaseId) {
     setNotice(null);
-    if (nextPhase !== "start" && !recommendation) {
-      setNotice("먼저 기획서나 아이디어를 분석해 프로젝트 브리프를 만들어주세요.");
-      setPhase("start");
-      return;
-    }
-    if (
-      (nextPhase === "build" || nextPhase === "ship") &&
-      (!selectedTool || !selectedServiceType)
-    ) {
-      setPhase("shape");
-      setShapeTab(!selectedTool ? "tool" : "service");
-      setNotice("제작을 시작하기 전에 도구와 서비스 형태를 직접 확정해주세요.");
-      return;
-    }
     setPhase(nextPhase);
     scrollToTop();
   }
@@ -1275,6 +1280,7 @@ export function VibeCraftApp() {
       const result = await postJson<Recommendation>("/api/analyze-plan", {
         role,
         extractedText: planText,
+        complexity: activeComplexity,
       });
       applyNewRecommendation(result);
       setShapeTab("brief");
@@ -1304,6 +1310,7 @@ export function VibeCraftApp() {
       const result = await postJson<{ nextQuestions: string[] }>("/api/idea-interview", {
         role,
         idea,
+        complexity: activeComplexity,
       });
       setInterviewQuestions(result.nextQuestions);
       setInterviewAnswers({});
@@ -1333,6 +1340,7 @@ export function VibeCraftApp() {
           role,
           idea,
           answers: interviewAnswers,
+          complexity: activeComplexity,
         },
       );
       applyNewRecommendation(result.recommendation);
@@ -1377,6 +1385,10 @@ export function VibeCraftApp() {
   }
 
   function setChecklist(item: ChecklistItem, status: ChecklistStatus) {
+    if (!recommendation || !selectedTool || !selectedServiceType) {
+      setNotice("실제 제작 기록을 시작하려면 기획서 분석과 제작 방식 선택을 먼저 마쳐주세요.");
+      return;
+    }
     const itemIndex = checklistItems.findIndex((candidate) => candidate.id === item.id);
     const hasIncompletePrevious = checklistItems
       .slice(0, itemIndex)
@@ -1407,6 +1419,10 @@ export function VibeCraftApp() {
   }
 
   function setDeployCheck(item: ChecklistItem, status: ChecklistStatus) {
+    if (!recommendation || !selectedTool || !selectedServiceType) {
+      setNotice("공개 점검을 기록하려면 기획서 분석과 제작 방식 선택을 먼저 마쳐주세요.");
+      return;
+    }
     const itemIndex = deploymentItems.findIndex((candidate) => candidate.id === item.id);
     const buildIncomplete = checklistItems.some(
       (candidate) => checklistStatuses[candidate.id] !== "done",
@@ -1488,6 +1504,7 @@ export function VibeCraftApp() {
         selectedTool: activeTool,
         selectedServiceType: activeServiceType,
         projectSummary: recommendation?.summary,
+        complexity: activeComplexity,
       });
       setChatMessages((current) => [
         ...current,
@@ -1515,14 +1532,18 @@ export function VibeCraftApp() {
     }
   }
 
-  function copyPrompt(template: string) {
+  function formatPrompt(template: string) {
     const filled = template
       .replaceAll(
         "{{projectSummary}}",
         recommendation?.summary ?? "내 프로젝트 설명을 여기에 붙여넣습니다.",
       )
       .replaceAll("{{errorMessage}}", errorMessage || "에러 메시지를 여기에 붙여넣습니다.");
-    void copyText(filled, "현재 프로젝트 내용으로 프롬프트를 복사했습니다.");
+    return `${filled}\n\n[이번 제작 범위: ${complexityOptions.find((option) => option.id === activeComplexity)?.title}]\n${complexityInstruction(activeComplexity)}`;
+  }
+
+  function copyPrompt(template: string) {
+    void copyText(formatPrompt(template), "선택한 제작 복잡도를 반영한 프롬프트를 복사했습니다.");
   }
 
   function followAssistantLink(label: string) {
@@ -1534,6 +1555,60 @@ export function VibeCraftApp() {
       return;
     }
     setResource(target as ResourceId);
+  }
+
+  function renderComplexitySelector() {
+    return (
+      <section className="hud-panel rounded-[1.25rem] p-5 sm:p-6" aria-labelledby="complexity-title">
+        <h2 className="type-title text-ink" id="complexity-title">얼마나 간단하게 만들까요?</h2>
+        <p className="type-body mt-1 text-muted">수업 실습은 ‘한 화면 실습’부터 시작하세요. 선택은 설계 추천과 제작 프롬프트에 반영됩니다. 외부 코딩 도구가 만들 파일 목록은 생성 전에 직접 확인하세요.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {complexityOptions.map((option) => (
+            <button
+              aria-pressed={activeComplexity === option.id}
+              className={`rounded-xl border p-4 text-left transition-colors ${activeComplexity === option.id ? "border-signal bg-signal-soft text-ink" : "border-line bg-surface text-muted hover:border-signal/40"}`}
+              key={option.id}
+              onClick={() => setComplexity(option.id)}
+              type="button"
+            >
+              <span className="block text-sm font-bold">{option.title}</span>
+              <span className="mt-1 block text-xs leading-5">{option.description}</span>
+              <span className="mt-3 block border-t border-current/10 pt-3 text-xs font-semibold leading-5">{option.example}</span>
+            </button>
+          ))}
+        </div>
+        {recommendation && recommendationComplexity && recommendationComplexity !== activeComplexity ? (
+          <p className="mt-4 text-xs leading-5 text-signal-ink">복사하는 프롬프트에는 새 선택이 바로 적용됩니다. 기존 브리프와 기술 추천을 바꾸려면 시작하기에서 다시 분석하세요.</p>
+        ) : null}
+      </section>
+    );
+  }
+
+  function renderPhasePreview(phaseId: Exclude<PhaseId, "start">) {
+    const previewSteps: Record<Exclude<PhaseId, "start">, string[]> = {
+      shape: ["프로젝트 브리프에서 대상과 핵심 기능 확인", "제작 도구와 서비스 형태 선택", "복잡도에 맞게 첫 버전의 범위 정하기"],
+      build: ["가장 중요한 동작 하나 만들기", "실행해서 결과 확인하기", "완료한 뒤 다음 기능으로 이동하기"],
+      ship: ["핵심 흐름과 모바일 화면 점검", "비밀 정보와 필요한 설정 확인", "공유 주소를 열어 실제 사용 확인"],
+    };
+    const metadata = phaseMetadata[phaseId];
+    return (
+      <section className="rounded-[1.25rem] border border-line bg-surface p-6 shadow-soft sm:p-10">
+        <Eyebrow>전체 흐름 미리보기 · {metadata.step}</Eyebrow>
+        <h1 className="type-display mt-5 text-signal-ink">{metadata.label}</h1>
+        <p className="type-body mt-4 max-w-2xl text-muted">{metadata.description}</p>
+        <p className="mt-5 rounded-xl border border-signal/20 bg-signal-soft p-4 text-sm leading-6 text-ink">이 화면은 둘러보기입니다. 실제 프로젝트의 진행률이나 완료 기록은 바뀌지 않습니다.</p>
+        <h2 className="type-title mt-9 text-ink">이 단계에서 하는 일</h2>
+        <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+          {previewSteps[phaseId].map((step, index) => (
+            <li className="rounded-xl border border-line bg-canvas p-4 text-sm leading-6 text-ink" key={step}>
+              <span className="mb-2 block font-mono text-xs font-bold text-signal-ink">0{index + 1}</span>{step}
+            </li>
+          ))}
+        </ol>
+        <p className="mt-7 text-sm font-semibold text-muted">완료하면: {metadata.outcome}</p>
+        <PrimaryButton className="mt-7" onClick={() => navigatePhase("start")}>내 프로젝트 시작하기</PrimaryButton>
+      </section>
+    );
   }
 
   function renderStartPhase() {
@@ -1550,6 +1625,7 @@ export function VibeCraftApp() {
             VibeCraft는 많은 개발 지식을 한꺼번에 보여주지 않습니다. 지금 프로젝트에 필요한
             다음 행동 하나를 정하고, 배포 링크가 생길 때까지 함께 갑니다.
           </p>
+          <p className="mt-3 text-sm font-semibold text-signal-ink">기획서를 입력하기 전에도 상단의 2~4단계를 눌러 전체 과정을 둘러볼 수 있어요.</p>
 
           {recommendation ? (
             <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-success/20 bg-success/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1576,6 +1652,8 @@ export function VibeCraftApp() {
             </p>
             <RoleSelector role={role} onChange={handleRoleChange} />
           </div>
+
+          <div className="mt-6">{renderComplexitySelector()}</div>
 
           <div className="hud-panel relative mt-6 rounded-[1.25rem] p-5 sm:p-6">
             <StartModePicker mode={startMode} onChange={setStartMode} />
@@ -1744,12 +1822,7 @@ export function VibeCraftApp() {
 
   function renderShapePhase() {
     if (!recommendation) {
-      return (
-        <ProjectEmptyState
-          description="프로젝트를 설계하려면 먼저 기획서나 아이디어를 분석해야 합니다."
-          onAction={() => navigatePhase("start")}
-        />
-      );
+      return renderPhasePreview("shape");
     }
 
     const shapeStepAction =
@@ -1782,6 +1855,8 @@ export function VibeCraftApp() {
         <p className="type-body mt-5 max-w-2xl text-muted">
           핵심 기능을 먼저 정리한 뒤, 프로젝트에 맞는 도구와 구현 순서를 확인하세요.
         </p>
+
+        <div className="mt-8">{renderComplexitySelector()}</div>
 
         <ShapeTabs activeTab={shapeTab} onChange={setShapeTab} />
 
@@ -2509,11 +2584,11 @@ export function VibeCraftApp() {
                     </p>
                   </div>
                   <span className="font-mono text-[10px] font-bold text-muted">
-                    {selectedServiceInfo.screens.length} SCREENS
+                    {displayedScreens.length} SCREENS
                   </span>
                 </div>
                 <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {selectedServiceInfo.screens.map((screen, index) => (
+                  {displayedScreens.map((screen, index) => (
                     <li
                       className="interactive-card flex items-center gap-3 rounded-xl border border-line bg-surface/70 px-3.5 py-3"
                       key={screen}
@@ -2584,13 +2659,8 @@ export function VibeCraftApp() {
   }
 
   function renderBuildPhase() {
-    if (!recommendation) {
-      return (
-        <ProjectEmptyState
-          description="먼저 프로젝트 브리프를 만들면 현재 프로젝트에 맞는 작업 목록이 준비됩니다."
-          onAction={() => navigatePhase("start")}
-        />
-      );
+    if (!recommendation || !selectedTool || !selectedServiceType) {
+      return renderPhasePreview("build");
     }
 
     const doneCount = checklistItems.filter(
@@ -2615,6 +2685,8 @@ export function VibeCraftApp() {
             />
           </div>
         </div>
+
+        <div className="mt-8">{renderComplexitySelector()}</div>
 
         <div className="mt-10">
           {currentMission ? (
@@ -2679,13 +2751,8 @@ export function VibeCraftApp() {
   }
 
   function renderShipPhase() {
-    if (!recommendation) {
-      return (
-        <ProjectEmptyState
-          description="프로젝트 브리프와 제작 작업이 있어야 공개 준비도를 계산할 수 있습니다."
-          onAction={() => navigatePhase("start")}
-        />
-      );
+    if (!recommendation || !selectedTool || !selectedServiceType) {
+      return renderPhasePreview("ship");
     }
 
     const deployDone = deploymentItems.filter(
@@ -2973,7 +3040,7 @@ export function VibeCraftApp() {
                     <SecondaryButton className="mt-5 hidden lg:inline-flex" icon={Copy} onClick={() => copyPrompt(prompt.template)}>프로젝트 내용으로 복사</SecondaryButton>
                   </div>
                   <div>
-                    <div className={`relative mt-5 overflow-hidden rounded-xl border border-ink bg-ink ${index === 0 ? "lg:mt-0" : ""}`}><div className="flex items-center gap-1.5 border-b border-surface/10 px-4 py-2.5"><span className="h-1.5 w-1.5 rounded-full bg-signal" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="ml-2 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/35">READY TO USE</span></div><pre className="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-xs leading-6 text-surface/85">{prompt.template}</pre></div>
+                    <div className={`relative mt-5 overflow-hidden rounded-xl border border-ink bg-ink ${index === 0 ? "lg:mt-0" : ""}`}><div className="flex items-center gap-1.5 border-b border-surface/10 px-4 py-2.5"><span className="h-1.5 w-1.5 rounded-full bg-signal" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="h-1.5 w-1.5 rounded-full bg-surface/25" /><span className="ml-2 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-surface/35">READY TO USE</span></div><pre className="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-xs leading-6 text-surface/85">{formatPrompt(prompt.template)}</pre></div>
                     <SecondaryButton className="mt-3 w-full justify-center lg:hidden" icon={Copy} onClick={() => copyPrompt(prompt.template)}>프로젝트 내용으로 복사</SecondaryButton>
                   </div>
                 </div>

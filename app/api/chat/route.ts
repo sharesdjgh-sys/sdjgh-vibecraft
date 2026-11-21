@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { aiErrorPayload, generateAiJson } from "@/lib/ai-provider";
 import { chatOutputJsonSchema, projectCoachSystemPrompt } from "@/lib/ai-schemas";
+import { complexityInstruction } from "@/lib/project-complexity";
 
 const schema = z.object({
   role: z.enum(["student", "teacher", "adult"]),
@@ -10,6 +11,7 @@ const schema = z.object({
   selectedTool: z.enum(["codex", "claude", "antigravity"]).optional(),
   selectedServiceType: z.enum(["web", "mobile-web", "game", "software"]).optional(),
   projectSummary: z.string().optional(),
+  complexity: z.enum(["practice", "small", "extended", "advanced"]).default("practice"),
 });
 
 const responseSchema = z.object({
@@ -42,6 +44,8 @@ export async function POST(request: Request) {
 선택 도구: ${parsed.data.selectedTool ?? "미선택"}
 서비스 형태: ${parsed.data.selectedServiceType ?? "미선택"}
 프로젝트: ${parsed.data.projectSummary ?? "아직 없음"}
+제작 복잡도: ${parsed.data.complexity}
+제작 범위 규칙: ${complexityInstruction(parsed.data.complexity)}
 질문: ${parsed.data.message}
 
 다음 JSON 형식으로 반환하세요:
