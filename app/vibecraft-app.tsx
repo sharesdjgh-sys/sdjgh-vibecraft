@@ -1053,6 +1053,7 @@ export function VibeCraftApp() {
       setCampusToken(event.data.token);
       setCampusPlans([]);
       setCampusPlansOpen(false);
+      window.parent.postMessage({ type: "sso:accepted" }, SMART_CAMPUS_ORIGIN);
     }
     window.addEventListener("message", receiveToken);
     const requestToken = () => {
